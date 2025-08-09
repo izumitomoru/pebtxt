@@ -2,13 +2,15 @@
 
 void getinput() {
   using namespace std;
-  cout << "1. New file 2. Existing file 3. Read line 4. Get file info";
+  cout << "1. New file 2. Existing file 3. Read line 4. Get file info ";
   int choice;
   cin >> choice;
 
   cout << "Enter path: ";
   string path;
   cin >> path;
+
+  Functions::fileInfo file{ Functions::getFileInfo(path) };
 
   // Open new or existing file
   switch (choice) {
@@ -21,8 +23,12 @@ void getinput() {
   case 3: {
     Functions::gotoLine(path);
   }
-  case 4:
-    cout << "File info: " << Functions::getFileInfo(path).lineSum;
+  case 4: {
+    cout << "Filename: " << file.path << '\n'
+         << "Filename: " << file.filename << '\n'
+         << "Lines: " << file.lineSum << '\n'
+         << "Characters: " << file.charSum << '\n';
+  }
   }
 }
 

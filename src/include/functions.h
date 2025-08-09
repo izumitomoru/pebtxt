@@ -19,11 +19,11 @@ namespace Functions {
     int lineSum{};
     int charSum{};
   };
-  fileInfo getFileInfo(const std::string);
-  void readFile(const std::string, const std::string);
-  int getLineSum(std::string);
-  void writeDummyLines(std::string, int);
-  void openExistingFile(std::string);
-  void gotoLine(std::string);
+  fileInfo getFileInfo(const string);
+  void readFile(const string);
+  int getLineSum(string);
+  void writeDummyLines(string, int);
+  void openExistingFile(string);
+  void gotoLine(string);
 } // namespace Functions
 #endif

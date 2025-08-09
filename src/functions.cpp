@@ -1,14 +1,10 @@
 #include "functions.h"
 
 // TODO:
-// use classes to classify files, the system i have now isn't easily sustainable
+// make slightly less bad structs
 // implement scrolling and proper file info fetching
 
 namespace Functions {
-  using namespace std;
-
-  void openNewFile() {
-  }
 
   // default path for files
   const string defaultpath{ "./files/" };
@@ -16,7 +12,7 @@ namespace Functions {
   // const string defaultpath{ "/run/media/pebarch/pebdrive/_Code/C++/filetests/files/" };
   // const string cachepath{ "/run/media/pebarch/pebdrive/_Code/C++/filetests/cache/" };
 
-  // very inefficient copies at the moment, but it's workable
+  // making very inefficient copies at the moment, but it's workable
   fileInfo getFileInfo(string path) {
     // slightly flawed, but whatever
     string cachepath{};
@@ -28,19 +24,19 @@ namespace Functions {
 
     // get total number of lines, allowing for proper padding
     string line;
-    ifstream file(path);
+    ifstream sfile(path);
     int lineSum{};
-    while (getline(file, line)) {
+    while (getline(sfile, line)) {
       lineSum++;
     }
-    file.close();
+    sfile.close();
 
     fileInfo info{
       path,
-      path,
       cachepath,
+      path,
       lineSum,
-      0
+      0,
     };
 
     return info;
@@ -48,7 +44,6 @@ namespace Functions {
 
   // uses line sum to calculate spaces (highly inefficient right now)
   void getSpaces(int& linenum, int& spacenum, string& spacestr) {
-    using namespace std;
     spacestr = "";
     // if whole number, decrement the number of spaces, this means each time it becomes a power of 10 it can recognize the change without needing a shitton of if statements
     if (log10(linenum) == static_cast<int>(log10(linenum))) {
@@ -63,35 +58,35 @@ namespace Functions {
   }
 
   void writeDummyLines(string path, int linenum) {
-    using namespace std;
     // thing to write dummy lines
-    ofstream file(path, fstream::out | fstream::trunc);
+    ofstream sfile(path, fstream::out | fstream::trunc);
     for (int i{ 1 }; i <= linenum; ++i) {
-      file << "line " + to_string(i) << '\n';
+      sfile << "line " + to_string(i) << '\n';
     }
-    file.close();
+    sfile.close();
   }
 
   void gotoLine(string path) {
     getFileInfo(path);
   }
 
-  void readFile(const string path, const string cachefilepath) {
+  void readFile(const string path) {
     // open file and get line number
-    ifstream file(path);
+    fileInfo file{ getFileInfo(path) };
+    ifstream sfile(file.path);
     // const int linesum{ getLineSum(path) };
 
-    file.close();
+    sfile.close();
 
     // reopen file (required)
-    file.open(path);
+    sfile.open(path);
 
     // create and open cache file
     // currently will not handle ~ and / paths
-    ofstream cachefile(cachefilepath, fstream::out | fstream::trunc);
+    ofstream cachefile(file.cachepath, fstream::out | fstream::trunc);
 
     // space counter
-    int spacenum = log10(getFileInfo(path).lineSum);
+    int spacenum = log10(file.lineSum);
     // string for the spaces
     string spacestr;
     // line to read
@@ -101,12 +96,12 @@ namespace Functions {
 
     // good solution i found
     // don't use file.eof() as it only returns true after reading the end of the stream, it doesn't indicate that the next read will be end
-    if (file.is_open()) {
+    if (sfile.is_open()) {
       // track line number manually
       int linenum{};
 
       // getline() automatically moves to next line
-      while (getline(file, line)) {
+      while (getline(sfile, line)) {
         // print lines
         ++linenum;
 
@@ -135,9 +130,9 @@ namespace Functions {
       string enter{};
       cin >> enter;
 
-      remove(cachefilepath.c_str());
+      remove(file.cachepath.c_str());
 
-      file.close();
+      sfile.close();
 
       // one possible (shitty) solution i found
       // while (!file.eof()) {}
@@ -145,8 +140,6 @@ namespace Functions {
   }
 
   void openExistingFile(string path) {
-    using namespace std;
-
     // just wrote over my whole functions.cpp file lol thank god for undo
     // changing this shit to burger.txt ONLY
     // writeDummyLines("./files/burger.txt", 200);
@@ -154,7 +147,7 @@ namespace Functions {
     fileInfo file{ getFileInfo(path) };
     cout << "Path is " << file.path << '\n';
 
-    readFile(file.path, file.cachepath);
+    readFile(file.path);
 
     // file >> line;
 
