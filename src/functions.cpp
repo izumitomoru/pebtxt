@@ -21,7 +21,35 @@ namespace Functions {
     return lines;
   }
 
-  void getSpaces(int x) {
+  // don't fucking use pointers
+  //  void getSpaces(int* linenumber, int* spacesnumber, std::string* spaces) {
+  //    using namespace std;
+  //    // if whole number, decrement the number of spaces, this means each time it becomes a power of 10 it can recognize the change without needing a shitton of if statements
+  //    if (log10(*linenumber) == static_cast<int>(log10(*linenumber))) {
+  //      --spacesnumber;
+  //    }
+  //    for (int i{}; i <= *spacesnumber; ++i) {
+  //      // idk which one of these is the most efficient
+  //      // spaces = spaces + ' ';
+  //      *spaces += ' ';
+  //      // spaces.append(" ");
+  //    }
+  //  }
+
+  void getSpacesRef(int& linenumber, int& spacesnumber, std::string& spaces) {
+    using namespace std;
+    // memory inefficient but it works for now
+    spaces = "";
+    // if whole number, decrement the number of spaces, this means each time it becomes a power of 10 it can recognize the change without needing a shitton of if statements
+    if (log10(linenumber) == static_cast<int>(log10(linenumber))) {
+      --spacesnumber;
+    }
+    for (int i{}; i <= spacesnumber; ++i) {
+      // idk which one of these is the most efficient
+      // spaces = spaces + ' ';
+      spaces += ' ';
+      // spaces.append(" ");
+    }
   }
 
   // default path for files
@@ -58,11 +86,16 @@ namespace Functions {
     ifstream file(path);
 
     // get line number
-    const int lines{ getLineSum(path) };
+    int lines{ getLineSum(path) };
     file.close();
 
     int spacesnumber = log10(lines);
+    int& ptrtospacesnum{ spacesnumber };
+
+    // works
+    // cout << "pointer to spaces num " << *ptrtospacesnum << endl;
     string spaces;
+    string& ptrtospaces{ spaces };
 
     file.open(path);
 
@@ -80,46 +113,21 @@ namespace Functions {
 
       // track line number manually
       int linenumber{};
+      int& ptrtolinenum{ linenumber };
 
       // getline() automatically moves to next line
       while (getline(file, line)) {
         // print lines
         ++linenumber;
 
-        // i figured tracking line number manually sucked so i'll be using streambuf or something (probably (maybe not))
-        // cout <<
-
-        // memory inefficient but it works for now
-        spaces = "";
-
-        // if whole number, decrement the number of spaces, this means each time it becomes a power of 10 it can recognize the change without needing a shitton of if statements
-        if (log10(linenumber) == static_cast<int>(log10(linenumber))) {
-          --spacesnumber;
-        }
-        for (int i{}; i <= spacesnumber; ++i) {
-          // idk which one of these is the most efficient
-          // spaces = spaces + ' ';
-          spaces += ' ';
-          // spaces.append(" ");
-        }
+        // calculate spaces number (super inefficiently)
+        getSpacesRef(linenumber, spacesnumber, spaces);
 
         // print line number and line
         cout << spaces << linenumber << ' ' << line << endl;
 
         // write to cache file
         cachefile << line << '\n';
-
-        // old manual method i was using
-        // if (lines <= 9)
-        //   spaces = "";
-        // else if (lines <= 99)
-        //   spaces = " ";
-        // else if (lines <= 999)
-        //   spaces = "  ";
-        // else if (lines <= 9999)
-        //   spaces = "   ";
-
-        // store lines in cache file
       }
 
       // i wanna be able to get a line number and print just that line

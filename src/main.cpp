@@ -1,21 +1,5 @@
 #include "functions.h"
 
-void inputfiletest() {
-  using namespace std;
-  cout << "Filename: ";
-  string filename;
-  getline(cin >> ws, filename);
-  // cin >> filename;
-
-  fstream file("./files/" + filename, fstream::out | fstream::trunc);
-
-  cout << "File contents: ";
-  string contents;
-  getline(cin >> ws, contents);
-  file << contents;
-  file.close();
-}
-
 void getinput() {
   using namespace std;
   cout << "1. New file 2. Existing file ";
