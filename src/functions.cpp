@@ -1,5 +1,5 @@
 #include "functions.h"
- //test
+
 namespace Functions {
 
   void openNewFile() {
