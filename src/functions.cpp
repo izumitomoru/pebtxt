@@ -25,19 +25,19 @@ namespace Functions {
     return linesum;
   }
 
-  void getSpaces(int& linenum, int& spacesnumber, std::string& spaces) {
+  void getSpaces(int& linenum, int& spacenum, std::string& spacestr) {
     using namespace std;
     // memory inefficient but it works for now
-    spaces = "";
+    spacestr = "";
     // if whole number, decrement the number of spaces, this means each time it becomes a power of 10 it can recognize the change without needing a shitton of if statements
     if (log10(linenum) == static_cast<int>(log10(linenum))) {
-      --spacesnumber;
+      --spacenum;
     }
-    for (int i{}; i <= spacesnumber; ++i) {
+    for (int i{}; i <= spacenum; ++i) {
       // idk which one of these is the most efficient
-      // spaces = spaces + ' ';
-      spaces += ' ';
-      // spaces.append(" ");
+      // spacestr = spacestr + ' ';
+      spacestr += ' ';
+      // spacestr.append(" ");
     }
   }
 
@@ -74,9 +74,9 @@ namespace Functions {
     int linesum{ getLineSum(path) };
     file.close();
 
-    int spacesnumber = log10(linesum);
+    int spacenum = log10(linesum);
 
-    string spaces;
+    string spacestr;
 
     file.open(path);
 
@@ -99,11 +99,11 @@ namespace Functions {
         // print lines
         ++linenum;
 
-        // calculate spaces number (super inefficiently)
-        getSpaces(linenum, spacesnumber, spaces);
+        // calculate number of spaces (super inefficiently)
+        getSpaces(linenum, spacenum, spacestr);
 
         // print spaces, line number and line
-        cout << spaces << linenum << ' ' << line << '\n';
+        cout << spacestr << linenum << ' ' << line << '\n';
 
         // write to cache file
         cachefile << line << '\n';
