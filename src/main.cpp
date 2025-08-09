@@ -2,22 +2,27 @@
 
 void getinput() {
   using namespace std;
-  cout << "1. New file 2. Existing file ";
+  cout << "1. New file 2. Existing file 3. Read line 4. Get file info";
   int choice;
   cin >> choice;
+
+  cout << "Enter path: ";
+  string path;
+  cin >> path;
 
   // Open new or existing file
   switch (choice) {
   // new file
   case 1: {
   }
-
   case 2: {
-    cout << "Enter path: ";
-    string path;
-    cin >> path;
     Functions::openExistingFile(path);
   }
+  case 3: {
+    Functions::gotoLine(path);
+  }
+  case 4:
+    cout << "File info: " << Functions::getFileInfo(path).lineSum;
   }
 }
 

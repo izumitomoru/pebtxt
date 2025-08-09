@@ -1,31 +1,53 @@
 #include "functions.h"
 
+// TODO:
+// use classes to classify files, the system i have now isn't easily sustainable
+// implement scrolling and proper file info fetching
+
 namespace Functions {
+  using namespace std;
 
   void openNewFile() {
   }
 
   // default path for files
-  const std::string defaultpath{ "./files/" };
-  const std::string cachepath{ "./cache/" };
-  // const std::string defaultpath{ "/run/media/pebarch/pebdrive/_Code/C++/filetests/files/" };
-  // const std::string cachepath{ "/run/media/pebarch/pebdrive/_Code/C++/filetests/cache/" };
+  const string defaultpath{ "./files/" };
+  const string defaultcachepath{ "./cache/" };
+  // const string defaultpath{ "/run/media/pebarch/pebdrive/_Code/C++/filetests/files/" };
+  // const string cachepath{ "/run/media/pebarch/pebdrive/_Code/C++/filetests/cache/" };
 
-  // get total number of lines, allowing for proper padding
-  int getLineSum(std::string path) {
-    using namespace std;
+  // very inefficient copies at the moment, but it's workable
+  fileInfo getFileInfo(string path) {
+    // slightly flawed, but whatever
+    string cachepath{};
+    if (path[0] != '/' && path[0] != '~' && path[0] != '.') {
+      cachepath = defaultcachepath + path;
+      path      = defaultpath + path;
+    } else if (path[0] == '/' || path[0] == '~' || path[0] == '.') {
+    }
+
+    // get total number of lines, allowing for proper padding
     string line;
     ifstream file(path);
-    int linesum{};
+    int lineSum{};
     while (getline(file, line)) {
-      linesum++;
+      lineSum++;
     }
     file.close();
-    return linesum;
+
+    fileInfo info{
+      path,
+      path,
+      cachepath,
+      lineSum,
+      0
+    };
+
+    return info;
   }
 
   // uses line sum to calculate spaces (highly inefficient right now)
-  void getSpaces(int& linenum, int& spacenum, std::string& spacestr) {
+  void getSpaces(int& linenum, int& spacenum, string& spacestr) {
     using namespace std;
     spacestr = "";
     // if whole number, decrement the number of spaces, this means each time it becomes a power of 10 it can recognize the change without needing a shitton of if statements
@@ -40,7 +62,7 @@ namespace Functions {
     }
   }
 
-  void writeDummyLines(std::string path, int linenum) {
+  void writeDummyLines(string path, int linenum) {
     using namespace std;
     // thing to write dummy lines
     ofstream file(path, fstream::out | fstream::trunc);
@@ -50,11 +72,15 @@ namespace Functions {
     file.close();
   }
 
-  void readFile(const std::string path, const std::string cachefilepath) {
-    using namespace std;
+  void gotoLine(string path) {
+    getFileInfo(path);
+  }
+
+  void readFile(const string path, const string cachefilepath) {
     // open file and get line number
     ifstream file(path);
-    const int linesum{ getLineSum(path) };
+    // const int linesum{ getLineSum(path) };
+
     file.close();
 
     // reopen file (required)
@@ -65,7 +91,7 @@ namespace Functions {
     ofstream cachefile(cachefilepath, fstream::out | fstream::trunc);
 
     // space counter
-    int spacenum = log10(linesum);
+    int spacenum = log10(getFileInfo(path).lineSum);
     // string for the spaces
     string spacestr;
     // line to read
@@ -118,23 +144,17 @@ namespace Functions {
     }
   }
 
-  void openExistingFile(std::string path) {
+  void openExistingFile(string path) {
     using namespace std;
 
-    // read file
-    // slightly flawed, but whatever
-    string cachefilepath{};
-    if (path[0] != '/' && path[0] != '~' && path[0] != '.') {
-      cachefilepath = cachepath + path;
-      path          = defaultpath + path;
-    } else if (path[0] == '/' || path[0] == '~' || path[0] == '.') {
-    }
+    // just wrote over my whole functions.cpp file lol thank god for undo
+    // changing this shit to burger.txt ONLY
+    // writeDummyLines("./files/burger.txt", 200);
 
-    writeDummyLines(path, 1000);
+    fileInfo file{ getFileInfo(path) };
+    cout << "Path is " << file.path << '\n';
 
-    cout << "Path is " << path << '\n';
-
-    readFile(path, cachefilepath);
+    readFile(file.path, file.cachepath);
 
     // file >> line;
 
