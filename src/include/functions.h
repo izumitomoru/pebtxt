@@ -24,6 +24,6 @@ namespace Functions {
   int getLineSum(string);
   void writeDummyLines(string, int);
   void openExistingFile(string);
-  void gotoLine(string);
+  void gotoLine(string, int);
 } // namespace Functions
 #endif

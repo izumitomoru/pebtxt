@@ -16,18 +16,25 @@ void getinput() {
   switch (choice) {
   // new file
   case 1: {
+    break;
   }
   case 2: {
     Functions::openExistingFile(path);
+    break;
   }
   case 3: {
-    Functions::gotoLine(path);
+    cout << "Go to line: ";
+    int lineNum{};
+    cin >> lineNum;
+    Functions::gotoLine(path, lineNum);
+    break;
   }
   case 4: {
     cout << "Filename: " << file.path << '\n'
          << "Filename: " << file.filename << '\n'
          << "Lines: " << file.lineSum << '\n'
          << "Characters: " << file.charSum << '\n';
+    break;
   }
   }
 }

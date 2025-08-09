@@ -66,8 +66,23 @@ namespace Functions {
     sfile.close();
   }
 
-  void gotoLine(string path) {
-    getFileInfo(path);
+  void gotoLine(string path, int lineNum) {
+    fileInfo file{ getFileInfo(path) };
+    ifstream sfile(file.path);
+
+    string line;
+    if (sfile.is_open()) {
+      // for (int i{}; i <= lineNum; ++i) {
+      //  getline(sfile, line);
+      //}
+      int currentLine{};
+      while (getline(sfile, line)) {
+        ++currentLine;
+        if (currentLine == lineNum)
+          break;
+      }
+      cout << lineNum << ' ' << line << '\n';
+    }
   }
 
   void readFile(const string path) {
