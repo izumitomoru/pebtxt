@@ -1,8 +1,6 @@
 #include "functions.h"
-
+ //test
 namespace Functions {
-  void write(std::fstream file, std::string content) {
-  }
 
   void openNewFile() {
   }

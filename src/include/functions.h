@@ -11,7 +11,6 @@
 #include <vector>
 
 namespace Functions {
-  void write();
   void openExistingFile(std::string);
 } // namespace Functions
 #endif
