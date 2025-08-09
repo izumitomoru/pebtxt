@@ -7,41 +7,30 @@ namespace Functions {
   void openNewFile() {
   }
 
+  // default path for files
+  const std::string defaultpath{ "/run/media/pebarch/pebdrive/_Code/C++/filetests/files/" };
+  const std::string cachepath{ "/run/media/pebarch/pebdrive/_Code/C++/filetests/cache/" };
+
   int getLineSum(std::string path) {
     using namespace std;
     string line;
     ifstream file(path);
     // track lines manually
-    int lines{};
+    int linesum{};
     while (getline(file, line)) {
-      lines++;
+      linesum++;
     }
     // redundant but keeping for good measure
     file.close();
-    return lines;
+    return linesum;
   }
 
-  // don't fucking use pointers
-  //  void getSpaces(int* linenumber, int* spacesnumber, std::string* spaces) {
-  //    using namespace std;
-  //    // if whole number, decrement the number of spaces, this means each time it becomes a power of 10 it can recognize the change without needing a shitton of if statements
-  //    if (log10(*linenumber) == static_cast<int>(log10(*linenumber))) {
-  //      --spacesnumber;
-  //    }
-  //    for (int i{}; i <= *spacesnumber; ++i) {
-  //      // idk which one of these is the most efficient
-  //      // spaces = spaces + ' ';
-  //      *spaces += ' ';
-  //      // spaces.append(" ");
-  //    }
-  //  }
-
-  void getSpacesRef(int& linenumber, int& spacesnumber, std::string& spaces) {
+  void getSpaces(int& linenum, int& spacesnumber, std::string& spaces) {
     using namespace std;
     // memory inefficient but it works for now
     spaces = "";
     // if whole number, decrement the number of spaces, this means each time it becomes a power of 10 it can recognize the change without needing a shitton of if statements
-    if (log10(linenumber) == static_cast<int>(log10(linenumber))) {
+    if (log10(linenum) == static_cast<int>(log10(linenum))) {
       --spacesnumber;
     }
     for (int i{}; i <= spacesnumber; ++i) {
@@ -51,10 +40,6 @@ namespace Functions {
       // spaces.append(" ");
     }
   }
-
-  // default path for files
-  const std::string defaultpath{ "/run/media/pebarch/pebdrive/_Code/C++/filetests/files/" };
-  const std::string cachepath{ "/run/media/pebarch/pebdrive/_Code/C++/filetests/cache/" };
 
   // i think setting up something to view the file first would be ideal for learning, so i'll do that instead
   void openExistingFile(std::string path) {
@@ -86,23 +71,18 @@ namespace Functions {
     ifstream file(path);
 
     // get line number
-    int lines{ getLineSum(path) };
+    int linesum{ getLineSum(path) };
     file.close();
 
-    int spacesnumber = log10(lines);
-    int& ptrtospacesnum{ spacesnumber };
+    int spacesnumber = log10(linesum);
 
-    // works
-    // cout << "pointer to spaces num " << *ptrtospacesnum << endl;
     string spaces;
-    string& ptrtospaces{ spaces };
 
     file.open(path);
 
     string line;
 
     /// reading file tests
-    // going to experiment with a cache system if possible
 
     // good solution i found
     // don't use file.eof() as it only returns true after reading the end of the stream, it doesn't indicate that the next read will be end
@@ -112,19 +92,18 @@ namespace Functions {
       ofstream cachefile(cachefilepath, fstream::out | fstream::trunc);
 
       // track line number manually
-      int linenumber{};
-      int& ptrtolinenum{ linenumber };
+      int linenum{};
 
       // getline() automatically moves to next line
       while (getline(file, line)) {
         // print lines
-        ++linenumber;
+        ++linenum;
 
         // calculate spaces number (super inefficiently)
-        getSpacesRef(linenumber, spacesnumber, spaces);
+        getSpaces(linenum, spacesnumber, spaces);
 
-        // print line number and line
-        cout << spaces << linenumber << ' ' << line << endl;
+        // print spaces, line number and line
+        cout << spaces << linenum << ' ' << line << '\n';
 
         // write to cache file
         cachefile << line << '\n';
@@ -156,11 +135,6 @@ namespace Functions {
     // file >> line;
 
     // assuming you need a loop for all lines, i'll experiment with that
-
-    // test i did that i'll keep for history books because of how utterly stupid it is
-    // for (int i{ 0 }; i < 5; ++i) {
-    //  cout << line << endl;
-    //}
 
     // writing to file goes here i guess
   }
