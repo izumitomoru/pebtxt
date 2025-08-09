@@ -13,7 +13,7 @@ void getinput() {
   }
 
   case 2: {
-    cout << "Filename: ";
+    cout << "Enter filename: ";
     string filename;
     cin >> filename;
     Functions::openExistingFile(filename);

@@ -6,8 +6,10 @@ namespace Functions {
   }
 
   // default path for files
-  const std::string defaultpath{ "/run/media/pebarch/pebdrive/_Code/C++/filetests/files/" };
-  const std::string cachepath{ "/run/media/pebarch/pebdrive/_Code/C++/filetests/cache/" };
+  const std::string defaultpath{ "./files/" };
+  const std::string cachepath{ "./cache/" };
+  // const std::string defaultpath{ "/run/media/pebarch/pebdrive/_Code/C++/filetests/files/" };
+  // const std::string cachepath{ "/run/media/pebarch/pebdrive/_Code/C++/filetests/cache/" };
 
   int getLineSum(std::string path) {
     using namespace std;
@@ -39,56 +41,39 @@ namespace Functions {
     }
   }
 
-  // i think setting up something to view the file first would be ideal for learning, so i'll do that instead
-  void openExistingFile(std::string path) {
+  void readFile(const std::string path, const std::string cachefilepath) {
     using namespace std;
+    // thing to write dummy lines
+    // ofstream filething(path, fstream::out | fstream::trunc);
+    // for (int i{ 1 }; i <= 100; ++i) {
+    //  filething << "line " + to_string(i) << '\n';
+    // }
+    // filething.close();
 
-    // read file
-    // slightly flawed, but whatever
-    string cachefilepath{};
-    if (path[0] != '/' && path[0] != '~') {
-      cachefilepath = cachepath + path;
-      path          = defaultpath + path;
-    } else if (path[0] == '/' || path[0] == '~') {
-      // cout << "returning";
-
-      // cache path testing
-      // cachefilepath = path;
-      // cout << "cache file path test" << cachefilepath;
-    }
-
-    cout << "Filename is " << path << '\n';
-
-    // setting it to whatever amount of lines blah blah blah
-    //    ofstream filething(path, fstream::out | fstream::trunc);
-    //    for (int i{ 1 }; i <= 100; ++i) {
-    //      filething << "line " + to_string(i) << '\n';
-    //    }
-    //    filething.close();
-
+    // open file and get line number
     ifstream file(path);
-
-    // get line number
-    int linesum{ getLineSum(path) };
+    const int linesum{ getLineSum(path) };
     file.close();
 
-    int spacenum = log10(linesum);
-
-    string spacestr;
-
+    // reopen file (required)
     file.open(path);
 
+    // create and open cache file
+    // currently will not handle ~ and / paths
+    ofstream cachefile(cachefilepath, fstream::out | fstream::trunc);
+
+    // space counter
+    int spacenum = log10(linesum);
+    // string for the spaces
+    string spacestr;
+    // line to read
     string line;
 
-    /// reading file tests
+    /// reading file
 
     // good solution i found
     // don't use file.eof() as it only returns true after reading the end of the stream, it doesn't indicate that the next read will be end
     if (file.is_open()) {
-      // create and open cache file
-      // currently will not handle ~ and / paths
-      ofstream cachefile(cachefilepath, fstream::out | fstream::trunc);
-
       // track line number manually
       int linenum{};
 
@@ -129,6 +114,23 @@ namespace Functions {
       // one possible (shitty) solution i found
       // while (!file.eof()) {}
     }
+  }
+
+  void openExistingFile(std::string path) {
+    using namespace std;
+
+    // read file
+    // slightly flawed, but whatever
+    string cachefilepath{};
+    if (path[0] != '/' && path[0] != '~' && path[0] != '.') {
+      cachefilepath = cachepath + path;
+      path          = defaultpath + path;
+    } else if (path[0] == '/' || path[0] == '~' || path[0] == '.') {
+    }
+
+    cout << "Path is " << path << '\n';
+
+    readFile(path, cachefilepath);
 
     // file >> line;
 
