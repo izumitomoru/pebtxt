@@ -11,23 +11,22 @@ namespace Functions {
   // const std::string defaultpath{ "/run/media/pebarch/pebdrive/_Code/C++/filetests/files/" };
   // const std::string cachepath{ "/run/media/pebarch/pebdrive/_Code/C++/filetests/cache/" };
 
+  // get total number of lines, allowing for proper padding
   int getLineSum(std::string path) {
     using namespace std;
     string line;
     ifstream file(path);
-    // track lines manually
     int linesum{};
     while (getline(file, line)) {
       linesum++;
     }
-    // redundant but keeping for good measure
     file.close();
     return linesum;
   }
 
+  // uses line sum to calculate spaces (highly inefficient right now)
   void getSpaces(int& linenum, int& spacenum, std::string& spacestr) {
     using namespace std;
-    // memory inefficient but it works for now
     spacestr = "";
     // if whole number, decrement the number of spaces, this means each time it becomes a power of 10 it can recognize the change without needing a shitton of if statements
     if (log10(linenum) == static_cast<int>(log10(linenum))) {
@@ -41,15 +40,18 @@ namespace Functions {
     }
   }
 
-  void readFile(const std::string path, const std::string cachefilepath) {
+  void writeDummyLines(std::string path, int linenum) {
     using namespace std;
     // thing to write dummy lines
-    // ofstream filething(path, fstream::out | fstream::trunc);
-    // for (int i{ 1 }; i <= 100; ++i) {
-    //  filething << "line " + to_string(i) << '\n';
-    // }
-    // filething.close();
+    ofstream file(path, fstream::out | fstream::trunc);
+    for (int i{ 1 }; i <= linenum; ++i) {
+      file << "line " + to_string(i) << '\n';
+    }
+    file.close();
+  }
 
+  void readFile(const std::string path, const std::string cachefilepath) {
+    using namespace std;
     // open file and get line number
     ifstream file(path);
     const int linesum{ getLineSum(path) };
@@ -127,6 +129,8 @@ namespace Functions {
       path          = defaultpath + path;
     } else if (path[0] == '/' || path[0] == '~' || path[0] == '.') {
     }
+
+    writeDummyLines(path, 1000);
 
     cout << "Path is " << path << '\n';
 

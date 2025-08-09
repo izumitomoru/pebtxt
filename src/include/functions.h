@@ -11,6 +11,7 @@
 #include <vector>
 
 namespace Functions {
+  void writeDummyLines(std::string, int);
   void openExistingFile(std::string);
 } // namespace Functions
 #endif
