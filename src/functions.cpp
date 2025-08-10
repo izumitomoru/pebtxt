@@ -1,7 +1,8 @@
 #include "functions.h"
 
 // TODO:
-// make slightly less bad structs
+// simplify and consolidate read function to be compatible with writing later on
+// improve file info struct (file size, etc.)
 // implement scrolling and proper file info fetching
 
 namespace Functions {
@@ -26,8 +27,10 @@ namespace Functions {
     string line;
     ifstream sfile(path);
     int lineSum{};
+    int charSum{};
     while (getline(sfile, line)) {
       lineSum++;
+      charSum += line.length();
     }
     sfile.close();
 
@@ -37,7 +40,7 @@ namespace Functions {
       path,
       lineSum,
       log10(lineSum),
-      0,
+      charSum,
     };
 
     return info;
@@ -78,7 +81,7 @@ namespace Functions {
     // currently will not handle ~ and / paths
     ofstream cachefile(file.cachepath, fstream::out | fstream::trunc);
 
-    if (sfile.is_open()) {
+    while (sfile.is_open()) {
       // get spaces
       // double spacenum = static_cast<int>(file.lineLog10);
       int spacenum = file.lineLog10;
@@ -136,10 +139,11 @@ namespace Functions {
   void openExistingFile(string path) {
     // just wrote over my whole functions.cpp file lol thank god for undo
     // changing this shit to burger.txt ONLY
-    // writeDummyLines("./files/burger.txt", 200);
+    // writeDummyLines("./files/burger.txt", 105);
 
     fileInfo file{ getFileInfo(path) };
     cout << "Path is " << file.path << '\n';
+    cout << "Cache path is " << file.cachepath << '\n';
 
     readFile(file.path);
 

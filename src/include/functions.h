@@ -1,6 +1,8 @@
 #ifndef FUNCTIONS_H
 #define FUNCTIONS_H
 
+// #include "cli/cli.h"
+#include "cpp-terminal/terminal.hpp" // will be trying to use this
 #include <cmath>
 #include <fstream>
 #include <iostream>
