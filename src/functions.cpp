@@ -36,25 +36,11 @@ namespace Functions {
       cachepath,
       path,
       lineSum,
+      log10(lineSum),
       0,
     };
 
     return info;
-  }
-
-  // uses line sum to calculate spaces (highly inefficient right now)
-  void getSpaces(int& linenum, int& spacenum, string& spacestr) {
-    spacestr = "";
-    // if whole number, decrement the number of spaces, this means each time it becomes a power of 10 it can recognize the change without needing a shitton of if statements
-    if (log10(linenum) == static_cast<int>(log10(linenum))) {
-      --spacenum;
-    }
-    for (int i{}; i <= spacenum; ++i) {
-      // idk which one of these is the most efficient
-      // spacestr = spacestr + ' ';
-      spacestr += ' ';
-      // spacestr.append(" ");
-    }
   }
 
   void writeDummyLines(string path, int linenum) {
@@ -86,56 +72,49 @@ namespace Functions {
   }
 
   void readFile(const string path) {
-    // open file and get line number
+    // get file info and open file and cache file
     fileInfo file{ getFileInfo(path) };
     ifstream sfile(file.path);
-    // const int linesum{ getLineSum(path) };
-
-    sfile.close();
-
-    // reopen file (required)
-    sfile.open(path);
-
-    // create and open cache file
     // currently will not handle ~ and / paths
     ofstream cachefile(file.cachepath, fstream::out | fstream::trunc);
 
-    // space counter
-    int spacenum = log10(file.lineSum);
-    // string for the spaces
-    string spacestr;
-    // line to read
-    string line;
-
-    /// reading file
-
-    // good solution i found
-    // don't use file.eof() as it only returns true after reading the end of the stream, it doesn't indicate that the next read will be end
     if (sfile.is_open()) {
+      // get spaces
+      // double spacenum = static_cast<int>(file.lineLog10);
+      int spacenum = file.lineLog10;
+      string spacestr{};
+
+      for (int i{ 0 }; i < spacenum; ++i) {
+        // idk which one of these is the most efficient
+        spacestr += ' ';
+        // spacestr = spacestr + ' ';
+        // spacestr.append(" ");
+      }
+
+      // line to read
+      string line{};
       // track line number manually
       int linenum{};
 
       // getline() automatically moves to next line
       while (getline(sfile, line)) {
-        // print lines
         ++linenum;
 
-        // calculate number of spaces (super inefficiently)
-        getSpaces(linenum, spacenum, spacestr);
+        // spaces
+        if (log10(linenum) == static_cast<int>(log10(linenum))) {
+          spacestr.resize(spacenum);
+          --spacenum;
+        }
 
         // print spaces, line number and line
         cout << spacestr << linenum << ' ' << line << '\n';
 
+        // info
+        // cout << file.lineLog10 << ' ' << log10(linenum) << ' ' << spacenum << ' ' << spacestr << linenum << ' ' << line << '\n';
+
         // write to cache file
         cachefile << line << '\n';
       }
-
-      // i wanna be able to get a line number and print just that line
-      // void getspecificline(vector<ifstream*> file) {
-      //  getline(*file[45], line);
-
-      //  cout << "line 30 " << line;
-      //}
 
       // cache handler
       cachefile.close();

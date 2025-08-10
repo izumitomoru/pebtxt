@@ -30,9 +30,10 @@ void getinput() {
     break;
   }
   case 4: {
-    cout << "Filename: " << file.path << '\n'
+    cout << "Path: " << file.path << '\n'
          << "Filename: " << file.filename << '\n'
          << "Lines: " << file.lineSum << '\n'
+         << "Line sum log 10: " << file.lineLog10 << '\n'
          << "Characters: " << file.charSum << '\n';
     break;
   }

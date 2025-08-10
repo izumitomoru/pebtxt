@@ -17,6 +17,7 @@ namespace Functions {
     string cachepath;
     string filename{};
     int lineSum{};
+    double lineLog10{};
     int charSum{};
   };
   fileInfo getFileInfo(const string);
