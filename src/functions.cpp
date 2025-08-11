@@ -1,6 +1,7 @@
 #include "functions.h"
 
 // TODO:
+// understand how console input and output streams work
 // simplify and consolidate read function to be compatible with writing later on
 // improve file info struct (file size, etc.)
 // implement scrolling and proper file info fetching
@@ -124,6 +125,7 @@ namespace Functions {
 
       // enter before closing file or exiting program
       // awful solution probably
+      cout << "tttttttttttest\b\b\b\b";
       string enter{};
       cin >> enter;
 
