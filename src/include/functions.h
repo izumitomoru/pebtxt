@@ -4,8 +4,13 @@
 // #include "cli/cli.h"
 // doesn't work i guess
 // #include "cpp-terminal/terminal.hpp" // will be trying to use this
+// #include "ftxui/dom/elements.hpp"
+// #include "ftxui/screen/screen.hpp"
 #include <cmath>
 #include <fstream>
+#include <ftxui/component/component.hpp>
+#include <ftxui/dom/elements.hpp>
+#include <ftxui/screen/screen.hpp>
 #include <iostream>
 #include <memory>
 #include <stdio.h>

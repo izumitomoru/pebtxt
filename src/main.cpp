@@ -40,24 +40,34 @@ void getinput() {
   }
 }
 
+void test() {
+}
+
 int main() {
-  getinput();
+  // getinput();
 
-  // inputfiletest();
+  // test();
 
-  // ofstream file("./files/file.txt");
-  // fstream file("./files/file.txt", fstream::out | fstream::app);
-  // fstream file;
-  // file.open("./files/file.txt", fstream::out);
+  using namespace ftxui;
 
-  // fstream file("./files/file.txt", fstream::app);
+  // Create a simple document with three text elements.
+  Element document = hbox({
+      text("left") | border,
+      text("middle") | border | flex,
+      text("right") | border,
+  });
 
-  // file << "test text";
+  // Create a screen with full width and height fitting the document.
+  auto screen = Screen::Create(
+      Dimension::Full(),       // Width
+      Dimension::Fit(document) // Height
+  );
 
-  // string text;
-  // getline(file, text);
-  // cout << text;
-  // file.close();
+  // Render the document onto the screen.
+  Render(screen, document);
+
+  // Print the screen to the console.
+  screen.Print();
 
   return 0;
 }

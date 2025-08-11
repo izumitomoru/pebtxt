@@ -1,2 +1,4 @@
 -I./src/include/
+-L/usr/lib/
+
 
