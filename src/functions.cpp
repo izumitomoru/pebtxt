@@ -3,6 +3,7 @@
 
 // TODO:
 // understand how console input and output streams work
+// learn gap buffers (looks awesome)
 // simplify and consolidate read function to be compatible with writing later on
 // improve file info struct (file size, etc.)
 // implement scrolling and proper file info fetching
@@ -160,23 +161,26 @@ namespace Functions {
       using namespace ftxui;
 
       string testcontents{};
+      tempText contents{};
 
       while (getline(sfile, line)) {
         ++linenum;
 
+        contents.text.push_back(line += '\n');
         if (std::log10(linenum) == static_cast<int>(std::log10(linenum))) {
           spacestr.resize(spacenum);
           --spacenum;
         }
         // line += '\n';
         testcontents += spacestr + to_string(linenum) + ' ' + line + '\n';
+        // contents.text += spacestr + to_string(linenum) + ' ' + line;
 
         // Element thing = text(line + '\n');
       }
 
       // idk
-      Element thing    = paragraph(testcontents);
-      Element contents = paragraph("");
+      Element thing = paragraph(testcontents);
+      // Element contents = paragraph("");
 
       Element testframe = frame(thing);
       Element winBorder = window(text(""), testframe);
@@ -216,6 +220,35 @@ namespace Functions {
     // assuming you need a loop for all lines, i'll experiment with that
 
     // writing to file goes here i guess
+  }
+
+  void fileBufferTest(const string path) {
+    fileInfo file{ getFileInfo(path) };
+
+    ifstream sfile(file.path);
+
+    while (sfile.is_open()) {
+      // line to read
+      string line{};
+      // track line number manually
+      int linenum{};
+
+      vector<char> test{};
+
+      while (getline(sfile, line)) {
+        for (int i{}; i < line.size(); ++i) {
+          test.push_back(line[i] += '\n');
+        }
+        // test.push_back(line += '\n');
+        // GapBuffer::createTestBuffer();
+      }
+
+      sfile.close();
+
+      for (int i; i < test.size(); ++i) {
+        cout << test[i];
+      }
+    }
   }
 
 } // namespace Functions

@@ -5,6 +5,7 @@
 // doesn't work i guess
 // #include "cpp-terminal/terminal.hpp" // will be trying to use this if ftxui sucks (unlikely)
 
+#include "gap_buffer.h"
 #include <cmath>
 #include <fstream>
 #include <ftxui/component/component.hpp>
@@ -16,7 +17,6 @@
 #include <stdio.h>
 #include <streambuf>
 #include <string>
-#include <vector>
 
 namespace Functions {
   using namespace std;
@@ -28,8 +28,9 @@ namespace Functions {
     double lineLog10{};
     int charSum{};
   };
+  void fileBufferTest(const string);
   struct tempText {
-    string contents{};
+    vector<string> text{};
     int lineSum{};
     int charSum{};
   };

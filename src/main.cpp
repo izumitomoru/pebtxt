@@ -1,4 +1,5 @@
 #include "functions.h"
+#include "gap_buffer.h"
 #include <ftxui/dom/elements.hpp>
 
 // i like to section off most of my code in functions (inefficient as fuck) for my sanity
@@ -21,8 +22,9 @@ void getinput() {
     break;
   }
   case 2: {
-    Functions::openExistingFile(path);
+    // Functions::openExistingFile(path);
     // Functions::readftxui(path);
+    Functions::fileBufferTest(path);
     break;
   }
   case 3: {
