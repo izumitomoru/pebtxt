@@ -1,4 +1,5 @@
 #include "functions.h"
+#include <string>
 
 // TODO:
 // understand how console input and output streams work
@@ -80,7 +81,7 @@ namespace Functions {
     fileInfo file{ getFileInfo(path) };
     ifstream sfile(file.path);
     // currently will not handle ~ and / paths
-    ofstream cachefile(file.cachepath, fstream::out | fstream::trunc);
+    ofstream scachefile(file.cachepath, fstream::out | fstream::trunc);
 
     while (sfile.is_open()) {
       // get spaces
@@ -117,11 +118,11 @@ namespace Functions {
         // cout << file.lineLog10 << ' ' << log10(linenum) << ' ' << spacenum << ' ' << spacestr << linenum << ' ' << line << '\n';
 
         // write to cache file
-        cachefile << line << '\n';
+        scachefile << line << '\n';
       }
 
       // cache handler
-      cachefile.close();
+      scachefile.close();
 
       // enter before closing file or exiting program
       // awful solution probably
@@ -135,6 +136,67 @@ namespace Functions {
 
       // one possible (shitty) solution i found
       // while (!file.eof()) {}
+    }
+  }
+
+  // awful code, really just trying to understand this library atm
+  void readftxui(const string path) {
+    using namespace std;
+    fileInfo file{ getFileInfo(path) };
+    ifstream sfile(file.path);
+    ofstream scachefile(file.cachepath, fstream::out | fstream::trunc);
+
+    while (sfile.is_open()) {
+      int spacenum = file.lineLog10;
+      string spacestr{};
+
+      for (int i{ 0 }; i < spacenum; ++i) {
+        spacestr += ' ';
+      }
+
+      string line{};
+      int linenum{};
+
+      using namespace ftxui;
+
+      string testcontents{};
+
+      while (getline(sfile, line)) {
+        ++linenum;
+
+        if (std::log10(linenum) == static_cast<int>(std::log10(linenum))) {
+          spacestr.resize(spacenum);
+          --spacenum;
+        }
+        // line += '\n';
+        testcontents += spacestr + to_string(linenum) + ' ' + line + '\n';
+
+        // Element thing = text(line + '\n');
+      }
+
+      // idk
+      Element thing    = paragraph(testcontents);
+      Element contents = paragraph("");
+
+      Element testframe = frame(thing);
+      Element winBorder = window(text(""), testframe);
+      Element testtext  = text("test thing");
+
+      auto screen = Screen::Create(Dimension::Full());
+
+      screen.ResetPosition(true);
+      Render(screen, winBorder);
+
+      // print screen
+      // Render(screen, thing);
+      // Render(screen, contents);
+      screen.Print();
+
+      string b;
+      cin >> b;
+
+      scachefile.close();
+      sfile.close();
     }
   }
 
@@ -155,4 +217,5 @@ namespace Functions {
 
     // writing to file goes here i guess
   }
+
 } // namespace Functions
