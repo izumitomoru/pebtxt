@@ -2,7 +2,7 @@
 #include <string>
 
 // TODO:
-// get started on learning ftxui input and making it work with buffers for initial edit functions and stuff
+// get started on learning ftxui elements and input making it work with buffers for initial edit functions and stuff
 
 namespace Functions {
 
@@ -87,11 +87,7 @@ namespace Functions {
     cout << "Path: " << file.path << '\n';
     vector<char> buffer{ createFileBuffer(file.path) };
 
-    // test
-    // cout << "buffer size: " << buffer.size() << " buffer fourth char: " << buffer[3] << '\n';
-
     // get spaces
-    // double spacenum = static_cast<int>(file.lineLog10);
     int spacenum = file.lineLog10;
     string spacestr{};
     for (int i{ 0 }; i < spacenum; ++i) {
@@ -108,11 +104,11 @@ namespace Functions {
 
     // print buffer contents
     for (int i{}; i < buffer.size(); ++i) {
-      // if not newline, simply print character
+      // if not newline, print character
       if (buffer[i] != '\n') {
         cout << buffer[i];
       } else {
-        // print \n
+        // print newline
         cout << buffer[i];
 
         // increment line number

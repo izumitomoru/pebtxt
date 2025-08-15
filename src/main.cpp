@@ -29,11 +29,6 @@ void getinput() {
     readFile(path);
     // Functions::openExistingFile(path);
     // Functions::readftxui(path);
-    // GapBuffer::fileBufferTest(path);
-    // vector<char> buffer{ GapBuffer::createFileBuffer(path) };
-    // GapBuffer::insert(buffer, 2, "burger");
-    // GapBuffer::remove(buffer, 0);
-    // GapBuffer::printBuffer(buffer);
     break;
   }
   case 3: {
@@ -95,10 +90,6 @@ void testscreen() {
 
 int main() {
   getinput();
-
-  // test();
-  // basicscreen();
-  // testscreen();
 
   return 0;
 }
