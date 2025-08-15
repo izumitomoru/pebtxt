@@ -4,6 +4,7 @@
 // TODO:
 // understand how console input and output streams work
 // learn gap buffers (looks awesome)
+// recode functions to use gap buffers (and hopefully edit using them)
 // simplify and consolidate read function to be compatible with writing later on
 // improve file info struct (file size, etc.)
 // implement scrolling and proper file info fetching
@@ -77,66 +78,56 @@ namespace Functions {
     }
   }
 
-  void readFile(const string path) {
-    // get file info and open file and cache file
-    fileInfo file{ getFileInfo(path) };
-    ifstream sfile(file.path);
-    // currently will not handle ~ and / paths
-    ofstream scachefile(file.cachepath, fstream::out | fstream::trunc);
+  void readFile(const string input) {
+    using namespace GapBuffer;
+    // get file info and create gap buffer
+    fileInfo file{ getFileInfo(input) };
+    // const string path{ file.path };
+    cout << "Path: " << file.path << '\n';
+    vector<char> buffer{ createFileBuffer(file.path) };
 
-    while (sfile.is_open()) {
-      // get spaces
-      // double spacenum = static_cast<int>(file.lineLog10);
-      int spacenum = file.lineLog10;
-      string spacestr{};
+    // test
+    // cout << "buffer size: " << buffer.size() << " buffer fourth char: " << buffer[3] << '\n';
 
-      for (int i{ 0 }; i < spacenum; ++i) {
-        // idk which one of these is the most efficient
-        spacestr += ' ';
-        // spacestr = spacestr + ' ';
-        // spacestr.append(" ");
-      }
+    // get spaces
+    // double spacenum = static_cast<int>(file.lineLog10);
+    int spacenum = file.lineLog10;
+    string spacestr{};
+    for (int i{ 0 }; i < spacenum; ++i) {
+      // idk which one of these is the most efficient
+      spacestr += ' ';
+      // spacestr = spacestr + ' ';
+      // spacestr.append(" ");
+    }
 
-      // line to read
-      string line{};
-      // track line number manually
-      int linenum{};
+    // horrific system i will change when the first line onscreen isn't the first
+    int linenum{ 1 };
+    // print for first line specifically
+    cout << spacestr << linenum << ' ';
 
-      // getline() automatically moves to next line
-      while (getline(sfile, line)) {
+    // print buffer contents
+    for (int i{}; i < buffer.size(); ++i) {
+      // if not newline, simply print character
+      if (buffer[i] != '\n') {
+        cout << buffer[i];
+      } else {
+        // print \n
+        cout << buffer[i];
+
+        // increment line number
         ++linenum;
 
-        // spaces
+        // check if line number is a power of 10
         if (log10(linenum) == static_cast<int>(log10(linenum))) {
-          spacestr.resize(spacenum);
+          // cout << "is int\n";
+          // decrement spacenum BEFORE resizing, this took 20 - 30 minutes to figure out, my brain's so fried
           --spacenum;
+          spacestr.resize(spacenum);
         }
 
-        // print spaces, line number and line
-        cout << spacestr << linenum << ' ' << line << '\n';
-
-        // info
-        // cout << file.lineLog10 << ' ' << log10(linenum) << ' ' << spacenum << ' ' << spacestr << linenum << ' ' << line << '\n';
-
-        // write to cache file
-        scachefile << line << '\n';
+        // print line
+        cout << spacestr << linenum << ' ';
       }
-
-      // cache handler
-      scachefile.close();
-
-      // enter before closing file or exiting program
-      // awful solution probably
-      cout << "tttttttttttest\b\b\b\b";
-      string enter{};
-      cin >> enter;
-
-      remove(file.cachepath.c_str());
-
-      sfile.close();
-
-      // one possible (shitty) solution i found
-      // while (!file.eof()) {}
     }
   }
 

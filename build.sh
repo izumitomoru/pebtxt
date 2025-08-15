@@ -1,8 +1,10 @@
 #!/bin/zsh
 
-cd /run/media/pebarch/pebdrive/_Code/C++/filetests/
+#cd /run/media/pebarch/pebdrive/_Code/C++/filetests/
+cd ./
 
-rm /run/media/pebarch/pebdrive/_Code/C++/filetests/build/build.out
+#rm /run/media/pebarch/pebdrive/_Code/C++/filetests/build/build.out
+rm ./build/build.out
 
 # compile manually
 # as a future note, -l has to be AFTER the .cpp files for some fucking reason, and i figured that out myself because nowhere online told me so

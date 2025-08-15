@@ -7,9 +7,9 @@ namespace GapBuffer {
 
   // using vectors really sucks but i gotta get something tangible here
   vector<char> createFileBuffer(const string path) {
-    fileInfo file{ getFileInfo(path) };
-
-    ifstream sfile(file.path);
+    // fileInfo file{ getFileInfo(path) };
+    // cout << "Path: " << path;
+    ifstream sfile(path);
 
     vector<char> buffer{};
 
@@ -29,17 +29,25 @@ namespace GapBuffer {
       }
       sfile.close();
     }
+    // test to see if buffer was created successfully
+    // cout << buffer[3] << '\n';
     return buffer;
+  }
+
+  void printBuffer(vector<char>& buffer) {
+    for (int i{}; i < buffer.size(); ++i) {
+      cout << buffer[i];
+    }
   }
 
   void insert(vector<char>& buffer, int pos, string text) {
     for (int i{}; i < text.length(); ++i, ++pos) {
       buffer.insert(buffer.begin() + pos, text[i]);
     }
+  }
 
-    for (int i{}; i < buffer.size(); ++i) {
-      cout << buffer[i];
-    }
+  void remove(vector<char>& buffer, int pos) {
+    buffer.erase(buffer.begin() + pos);
   }
 
 } // namespace GapBuffer

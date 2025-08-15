@@ -5,6 +5,7 @@
 // i like to section off most of my code in functions (inefficient as fuck) for my sanity
 void getinput() {
   using namespace std;
+  using namespace Functions;
   cout << "1. New file 2. Existing file 3. Read line 4. Get file info ";
   int choice;
   cin >> choice;
@@ -16,7 +17,7 @@ void getinput() {
   // cin >> pathanswer;
   // const string& path{ pathanswer };
 
-  Functions::fileInfo file{ Functions::getFileInfo(path) };
+  fileInfo file{ Functions::getFileInfo(path) };
 
   // Open new or existing file
   switch (choice) {
@@ -25,18 +26,21 @@ void getinput() {
     break;
   }
   case 2: {
+    readFile(path);
     // Functions::openExistingFile(path);
     // Functions::readftxui(path);
     // GapBuffer::fileBufferTest(path);
-    vector<char> buffer{ GapBuffer::createFileBuffer(path) };
-    GapBuffer::insert(buffer, 2, "burger");
+    // vector<char> buffer{ GapBuffer::createFileBuffer(path) };
+    // GapBuffer::insert(buffer, 2, "burger");
+    // GapBuffer::remove(buffer, 0);
+    // GapBuffer::printBuffer(buffer);
     break;
   }
   case 3: {
     cout << "Go to line: ";
     int lineNum{};
     cin >> lineNum;
-    Functions::gotoLine(path, lineNum);
+    gotoLine(path, lineNum);
     break;
   }
   case 4: {
