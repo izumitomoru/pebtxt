@@ -28,7 +28,6 @@ namespace Functions {
     double lineLog10{};
     int charSum{};
   };
-  void fileBufferTest(const string);
   struct tempText {
     vector<string> text{};
     int lineSum{};

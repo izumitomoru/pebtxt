@@ -6,6 +6,8 @@
 #include <vector>
 
 namespace GapBuffer {
-  void createTestBuffer();
-}
+  using namespace std;
+  vector<char> createFileBuffer(const string path);
+  void insert(vector<char>& buffer, int pos, string text);
+} // namespace GapBuffer
 #endif

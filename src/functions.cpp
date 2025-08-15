@@ -222,33 +222,4 @@ namespace Functions {
     // writing to file goes here i guess
   }
 
-  void fileBufferTest(const string path) {
-    fileInfo file{ getFileInfo(path) };
-
-    ifstream sfile(file.path);
-
-    while (sfile.is_open()) {
-      // line to read
-      string line{};
-      // track line number manually
-      int linenum{};
-
-      vector<char> test{};
-
-      while (getline(sfile, line)) {
-        for (int i{}; i < line.size(); ++i) {
-          test.push_back(line[i] += '\n');
-        }
-        // test.push_back(line += '\n');
-        // GapBuffer::createTestBuffer();
-      }
-
-      sfile.close();
-
-      for (int i; i < test.size(); ++i) {
-        cout << test[i];
-      }
-    }
-  }
-
 } // namespace Functions

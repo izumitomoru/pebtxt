@@ -6,7 +6,7 @@ rm /run/media/pebarch/pebdrive/_Code/C++/filetests/build/build.out
 
 # compile manually
 # as a future note, -l has to be AFTER the .cpp files for some fucking reason, and i figured that out myself because nowhere online told me so
-clang++ -Wall -g -std=c++23 -I./src/include -L/usr/lib src/main.cpp src/functions.cpp -lftxui-screen -lftxui-dom -lftxui-component -o build/build.out
+clang++ -Wall -g -std=c++23 -I./src/include -L/usr/lib src/main.cpp src/functions.cpp src/gap_buffer.cpp -lftxui-screen -lftxui-dom -lftxui-component -o build/build.out
 
 # compile automatically
 #clang++ -std=c++23 -I./src/include $(find src/ -type f -iregex ".*\.cpp") -o build/build.out

@@ -10,8 +10,11 @@ void getinput() {
   cin >> choice;
 
   cout << "Enter path: ";
-  string path;
+  string path{};
   cin >> path;
+  // string pathanswer;
+  // cin >> pathanswer;
+  // const string& path{ pathanswer };
 
   Functions::fileInfo file{ Functions::getFileInfo(path) };
 
@@ -24,7 +27,9 @@ void getinput() {
   case 2: {
     // Functions::openExistingFile(path);
     // Functions::readftxui(path);
-    Functions::fileBufferTest(path);
+    // GapBuffer::fileBufferTest(path);
+    vector<char> buffer{ GapBuffer::createFileBuffer(path) };
+    GapBuffer::insert(buffer, 2, "burger");
     break;
   }
   case 3: {
