@@ -2,12 +2,7 @@
 #include <string>
 
 // TODO:
-// understand how console input and output streams work
-// learn gap buffers (looks awesome)
-// recode functions to use gap buffers (and hopefully edit using them)
-// simplify and consolidate read function to be compatible with writing later on
-// improve file info struct (file size, etc.)
-// implement scrolling and proper file info fetching
+// get started on learning ftxui input and making it work with buffers for initial edit functions and stuff
 
 namespace Functions {
 
@@ -59,29 +54,35 @@ namespace Functions {
     sfile.close();
   }
 
+  // rewrote this on so much sleep deprivation, i tried to fix the 1 number difference in this state but failed
   void gotoLine(string path, int lineNum) {
+    using namespace GapBuffer;
     fileInfo file{ getFileInfo(path) };
-    ifstream sfile(file.path);
+    vector<char> buffer{ createFileBuffer(file.path) };
 
-    string line;
-    if (sfile.is_open()) {
-      // for (int i{}; i <= lineNum; ++i) {
-      //  getline(sfile, line);
-      //}
-      int currentLine{};
-      while (getline(sfile, line)) {
-        ++currentLine;
-        if (currentLine == lineNum)
-          break;
+    string line{};
+    int currentlinenum{ 1 };
+
+    // print buffer contents
+    for (int i{}; currentlinenum < lineNum + 1; ++i) {
+      // cout << "iter: " << i << '\n';
+      if (buffer[i] == '\n') {
+        ++currentlinenum;
       }
-      cout << lineNum << ' ' << line << '\n';
+
+      if (currentlinenum == lineNum && buffer[i] != '\n') {
+        // cout << "test\n";
+        line += buffer[i];
+      }
     }
+
+    cout << "Line " << currentlinenum - 1 << ": " << line;
   }
 
-  void readFile(const string input) {
+  void readFile(const string path) {
     using namespace GapBuffer;
     // get file info and create gap buffer
-    fileInfo file{ getFileInfo(input) };
+    fileInfo file{ getFileInfo(path) };
     // const string path{ file.path };
     cout << "Path: " << file.path << '\n';
     vector<char> buffer{ createFileBuffer(file.path) };
@@ -195,6 +196,7 @@ namespace Functions {
     }
   }
 
+  // probably not even needed
   void openExistingFile(string path) {
     // just wrote over my whole functions.cpp file lol thank god for undo
     // changing this shit to burger.txt ONLY
