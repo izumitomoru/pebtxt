@@ -10,7 +10,6 @@
 #include <fstream>
 #include <ftxui/component/component.hpp>
 #include <ftxui/dom/elements.hpp>
-#include <ftxui/screen/color.hpp>
 #include <ftxui/screen/screen.hpp>
 #include <iostream>
 #include <memory>
@@ -22,23 +21,18 @@ namespace Functions {
   using namespace std;
   struct fileInfo {
     string path{};
-    string cachepath;
     string filename{};
+    string cachepath;
     int lineSum{};
     double lineLog10{};
-    int charSum{};
-  };
-  struct tempText {
-    vector<string> text{};
-    int lineSum{};
     int charSum{};
   };
   fileInfo getFileInfo(const string);
   void readFile(const string);
   void readftxui(const string);
-  int getLineSum(string);
   void writeDummyLines(string, int);
   void openExistingFile(string);
-  void gotoLine(string, int);
+  void mainLoop();
+  string getLine(const string path, int lineNum);
 } // namespace Functions
 #endif

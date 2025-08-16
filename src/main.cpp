@@ -26,16 +26,15 @@ void getinput() {
     break;
   }
   case 2: {
-    readFile(path);
-    // Functions::openExistingFile(path);
-    // Functions::readftxui(path);
+    // readFile(path);
+    mainLoop();
     break;
   }
   case 3: {
     cout << "Go to line: ";
     int lineNum{};
     cin >> lineNum;
-    gotoLine(path, lineNum);
+    cout << "Line " << lineNum << ": " << getLine(path, lineNum);
     break;
   }
   case 4: {
@@ -89,7 +88,9 @@ void testscreen() {
 }
 
 int main() {
-  getinput();
+  using namespace Functions;
+  // getinput();
+  mainLoop();
 
   return 0;
 }

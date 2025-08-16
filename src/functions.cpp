@@ -1,8 +1,17 @@
 #include "functions.h"
+#include <ftxui/component/loop.hpp>
+#include <ftxui/component/screen_interactive.hpp>
 #include <string>
 
 // TODO:
+// improve read function so it can print just the size of the terminal, and from a chosen position in the file
 // get started on learning ftxui elements and input making it work with buffers for initial edit functions and stuff
+
+// model of what should happen when opening a file
+// 1. create screen to fit terminal size
+// 2. get path input and create file buffer
+// 3. loop to print buffer on and wait for user inputs (scroll, hit key or backspace)
+// 4. at end of loop, overwrite file contents with buffer contents
 
 namespace Functions {
 
@@ -35,8 +44,8 @@ namespace Functions {
 
     fileInfo info{
       path,
-      cachepath,
       path,
+      cachepath,
       lineSum,
       log10(lineSum),
       charSum,
@@ -55,7 +64,7 @@ namespace Functions {
   }
 
   // rewrote this on so much sleep deprivation, i tried to fix the 1 number difference in this state but failed
-  void gotoLine(string path, int lineNum) {
+  string getLine(const string path, int lineNum) {
     using namespace GapBuffer;
     fileInfo file{ getFileInfo(path) };
     vector<char> buffer{ createFileBuffer(file.path) };
@@ -76,7 +85,8 @@ namespace Functions {
       }
     }
 
-    cout << "Line " << currentlinenum - 1 << ": " << line;
+    // cout << "Line " << currentlinenum - 1 << ": " << line;
+    return line;
   }
 
   void readFile(const string path) {
@@ -128,87 +138,95 @@ namespace Functions {
     }
   }
 
-  // awful code, really just trying to understand this library atm
-  void readftxui(const string path) {
-    using namespace std;
-    fileInfo file{ getFileInfo(path) };
-    ifstream sfile(file.path);
-    ofstream scachefile(file.cachepath, fstream::out | fstream::trunc);
+  string getPath() {
+    cout << "Enter path: ";
+    string path{};
+    cin >> path;
 
-    while (sfile.is_open()) {
-      int spacenum = file.lineLog10;
-      string spacestr{};
+    return path;
+  }
 
-      for (int i{ 0 }; i < spacenum; ++i) {
-        spacestr += ' ';
-      }
+  void mainLoop() {
+    using namespace GapBuffer;
+    using namespace ftxui;
 
-      string line{};
-      int linenum{};
+    // get file info
+    fileInfo file(getFileInfo(getPath()));
 
-      using namespace ftxui;
+    // create file buffer
+    vector<char> buffer{ createFileBuffer(file.path) };
 
-      string testcontents{};
-      tempText contents{};
+    // create screen fitting the terminal
+    auto screen = Screen::Create(Dimension::Full());
+    // screen.
+    // ScreenInteractive screen = ScreenInteractive::TerminalOutput();
 
-      while (getline(sfile, line)) {
-        ++linenum;
+    // loop variables
 
-        contents.text.push_back(line += '\n');
-        if (std::log10(linenum) == static_cast<int>(std::log10(linenum))) {
-          spacestr.resize(spacenum);
-          --spacenum;
-        }
-        // line += '\n';
-        testcontents += spacestr + to_string(linenum) + ' ' + line + '\n';
-        // contents.text += spacestr + to_string(linenum) + ' ' + line;
+    // line count, cursor position, screen dimensions, vertical half point
+    int currentline{ 1 };
+    int cursorpos_x{};
+    int cursorpos_y{};
+    int screenDimY{ screen.dimy() };
+    int screenDimX{ screen.dimx() };
+    int screenVerticalHalfpoint{ screenDimY / 2 };
 
-        // Element thing = text(line + '\n');
-      }
+    // calculate topmost line
+    int highestVisibleLine{ (screenVerticalHalfpoint - screenVerticalHalfpoint) + 1 };
 
-      // idk
-      Element thing = paragraph(testcontents);
-      // Element contents = paragraph("");
+    // screen elements
+    Element bufferDisplay{};
+    Element winBorder = window(text("window title"), frame(text("test")));
 
-      Element testframe = frame(thing);
-      Element winBorder = window(text(""), testframe);
-      Element testtext  = text("test thing");
+    bool running{ true };
 
-      auto screen = Screen::Create(Dimension::Full());
-
+    int i{ 0 };
+    // while (running != false) {
+    for (i; i < 500; ++i) {
+      // screen.Active();
+      // Render(screen, winBorder);
       screen.ResetPosition(true);
-      Render(screen, winBorder);
-
-      // print screen
-      // Render(screen, thing);
-      // Render(screen, contents);
+      Render(screen, text(to_string(i)));
       screen.Print();
-
-      string b;
-      cin >> b;
-
-      scachefile.close();
-      sfile.close();
+      // screen.Clear();
     }
+
+    // screen size of 10, cursor is at y pos 6,
+
+    // idk
+    Element thing = paragraph("");
+
+    // Element testframe = frame(thing);
+    // Element winBorder = window(text(""), testframe);
+    Element testtext = text("test thing");
+
+    // Render(screen, winBorder);
+    // screen.Print();
+
+    // screen.ResetPosition(true);
+
+    // print screen
+    // Render(screen, thing);
+    // Render(screen, contents);
   }
 
   // probably not even needed
-  void openExistingFile(string path) {
-    // just wrote over my whole functions.cpp file lol thank god for undo
-    // changing this shit to burger.txt ONLY
-    // writeDummyLines("./files/burger.txt", 105);
+  // void openExistingFile(string path) {
+  //  // just wrote over my whole functions.cpp file lol thank god for undo
+  //  // changing this shit to burger.txt ONLY
+  //  // writeDummyLines("./files/burger.txt", 105);
 
-    fileInfo file{ getFileInfo(path) };
-    cout << "Path is " << file.path << '\n';
-    cout << "Cache path is " << file.cachepath << '\n';
+  //  fileInfo file{ getFileInfo(path) };
+  //  cout << "Path is " << file.path << '\n';
+  //  cout << "Cache path is " << file.cachepath << '\n';
 
-    readFile(file.path);
+  //  readFile(file.path);
 
-    // file >> line;
+  //  // file >> line;
 
-    // assuming you need a loop for all lines, i'll experiment with that
+  //  // assuming you need a loop for all lines, i'll experiment with that
 
-    // writing to file goes here i guess
-  }
+  //  // writing to file goes here i guess
+  //}
 
 } // namespace Functions
