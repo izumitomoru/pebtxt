@@ -5,6 +5,8 @@
 // doesn't work i guess
 // #include "cpp-terminal/terminal.hpp" // will be trying to use this if ftxui sucks (unlikely)
 
+// okay so i was gonna use ftxui but frankly i have no idea how to make it work so FUCK IT!!!! c++ ncurses
+
 #include "gap_buffer.h"
 #include <cmath>
 #include <fstream>
@@ -13,11 +15,16 @@
 #include <ftxui/screen/screen.hpp>
 #include <iostream>
 #include <memory>
+#include <ncurses.h>
 #include <stdio.h>
 #include <streambuf>
 #include <string>
 
+// cool snippet i stole from stack overflow
+#define ctrl(x) ((x) & 0x1f)
+
 namespace Functions {
+
   using namespace std;
   struct fileInfo {
     string path{};

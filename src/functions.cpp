@@ -1,6 +1,7 @@
 #include "functions.h"
 #include <ftxui/component/loop.hpp>
 #include <ftxui/component/screen_interactive.hpp>
+#include <ncurses.h>
 #include <string>
 
 // TODO:
@@ -147,6 +148,88 @@ namespace Functions {
   }
 
   void mainLoop() {
+    using namespace GapBuffer;
+    using namespace ftxui;
+
+    // get file info
+    // fileInfo file(getFileInfo(getPath()));
+
+    //// create file buffer
+    // vector<char> buffer{ createFileBuffer(file.path) };
+
+    // create screen fitting the terminal
+    initscr();
+
+    // raw() makes all input raw, cbreak() returns everything else directly
+    // also apparently for ctrl+q you NEED to use raw()
+    // cbreak();
+    raw();
+
+    // don't echo during getch()
+    noecho();
+    // enable keypad and function keys
+    keypad(stdscr, TRUE);
+
+    // loop variables
+
+    // line count, cursor position, screen dimensions, vertical half point
+    int currentline{ 1 };
+    int cursorpos_x{};
+    int cursorpos_y{};
+    int screenY{ LINES };
+    int screenX{ COLS };
+    int screenVerticalHalfpoint{ screenY / 2 };
+
+    // calculate topmost line
+    // maybe obsolete now that i have ncurses; it provides a scroll thing for me but i may make a custom function
+    int highestVisibleLine{ (screenVerticalHalfpoint - screenVerticalHalfpoint) + 1 };
+
+    // screen elements
+
+    // window snippet
+    WINDOW* win;
+    win = newwin(COLS, LINES, 5, 5); // height, width, start_y, start_x
+    box(win, 0, 0);                  // Draw a box around the window
+
+    // scroll window snippet
+    WINDOW* scroll_win = newwin(10, 30, 0, 0);
+    scrollok(scroll_win, TRUE); // Enable scrolling for this window
+    for (int i = 0; i < 20; ++i) {
+      wprintw(scroll_win, "Line %d\n", i);
+    }
+    wrefresh(scroll_win);
+
+    bool running{ true };
+
+    char ch{};
+    while (running) {
+      wrefresh(win); // Refresh to show the box
+      mvprintw(1, 0, "KEY NAME : %s - 0x%02x\n", keyname(ch), ch);
+      switch (ch = getch()) {
+      case ctrl('q'): {
+        mvprintw(0, 0, "exiting");
+        endwin();
+        running = false;
+      }
+      case ctrl('a'): {
+        mvprintw(0, 0, "ctrl+a");
+      }
+      }
+      // switch (ch = getch()) {
+      // case '0x1B': {
+      //  endwin();
+      //  running = false;
+      //}
+      //}
+      refresh();
+    }
+
+    endwin();
+
+    // screen size of 10, cursor is at y pos 6,
+  }
+
+  void mainLoopftxui() {
     using namespace GapBuffer;
     using namespace ftxui;
 
