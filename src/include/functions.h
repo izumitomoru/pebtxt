@@ -9,6 +9,7 @@
 
 #include "gap_buffer.h"
 #include <cmath>
+#include <ctime>
 #include <fstream>
 #include <ftxui/component/component.hpp>
 #include <ftxui/dom/elements.hpp>
@@ -19,6 +20,7 @@
 #include <stdio.h>
 #include <streambuf>
 #include <string>
+#include <unistd.h>
 
 // cool snippet i stole from stack overflow
 #define ctrl(x) ((x) & 0x1f)

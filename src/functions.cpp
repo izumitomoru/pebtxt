@@ -1,4 +1,7 @@
 #include "functions.h"
+#include <algorithm>
+#include <charconv>
+#include <cstring>
 #include <ftxui/component/loop.hpp>
 #include <ftxui/component/screen_interactive.hpp>
 #include <ncurses.h>
@@ -12,7 +15,15 @@
 // 1. create screen to fit terminal size
 // 2. get path input and create file buffer
 // 3. loop to print buffer on and wait for user inputs (scroll, hit key or backspace)
-// 4. at end of loop, overwrite file contents with buffer contents
+// 4. on save, overwrite file contents with buffer contents
+
+// print loop
+// clear screen (if needed, check if text in a line was updated and only render that one (speed efficient but annoying for right now))
+// print buffer contents, making sure everything is in the same place last frame, as well as current line number
+
+// will need:
+// checks for line number, a loop to get to iterate to a certain line number when adding and removing lines
+//
 
 namespace Functions {
 
@@ -152,13 +163,25 @@ namespace Functions {
     using namespace ftxui;
 
     // get file info
-    // fileInfo file(getFileInfo(getPath()));
+    fileInfo file(getFileInfo(getPath()));
 
-    //// create file buffer
-    // vector<char> buffer{ createFileBuffer(file.path) };
+    // create file buffer
+    vector<char> buffer{ createFileBuffer(file.path) };
 
     // create screen fitting the terminal
     initscr();
+
+    // window snippet
+    // WINDOW* win;
+    // win = newwin(COLS, LINES, 0, 0); // height, width, start_y, start_x
+    // box(win, 5, 5);                  // Draw a box around the window
+
+    // scroll window snippet
+    WINDOW* scroll_win = newwin(COLS, LINES, 0, 0);
+    scrollok(scroll_win, TRUE); // Enable scrolling for this window
+    refresh();                  // i think this puts the actual window onscreen
+
+    wrefresh(scroll_win);
 
     // raw() makes all input raw, cbreak() returns everything else directly
     // also apparently for ctrl+q you NEED to use raw()
@@ -174,57 +197,164 @@ namespace Functions {
 
     // line count, cursor position, screen dimensions, vertical half point
     int currentline{ 1 };
-    int cursorpos_x{};
-    int cursorpos_y{};
-    int screenY{ LINES };
-    int screenX{ COLS };
-    int screenVerticalHalfpoint{ screenY / 2 };
+    int cur_x{ 0 };
+    int cur_y{ 0 };
+    getyx(stdscr, cur_y, cur_x);
+    int scrY{ LINES };
+    int scrX{ COLS };
+    int scrVerticalHalfpoint{ scrY / 2 };
 
     // calculate topmost line
     // maybe obsolete now that i have ncurses; it provides a scroll thing for me but i may make a custom function
-    int highestVisibleLine{ (screenVerticalHalfpoint - screenVerticalHalfpoint) + 1 };
+    // definitely doing a custom function. unironically too lazy to look up how to use windows rn so i'm gonna do like 4 times the effort
+    int highestVisibleLine{ (scrVerticalHalfpoint - scrVerticalHalfpoint) + 1 };
 
-    // screen elements
+    // spaces (calculate this every time backspace or enter is pressed)
+    int maxspacenum{};
+    int currentspacenum{};
+    string spacestr{};
 
-    // window snippet
-    WINDOW* win;
-    win = newwin(COLS, LINES, 5, 5); // height, width, start_y, start_x
-    box(win, 0, 0);                  // Draw a box around the window
+    // line number
+    int linenum{ 0 };
+    int linesum{ 0 };
 
-    // scroll window snippet
-    WINDOW* scroll_win = newwin(10, 30, 0, 0);
-    scrollok(scroll_win, TRUE); // Enable scrolling for this window
-    for (int i = 0; i < 20; ++i) {
-      wprintw(scroll_win, "Line %d\n", i);
-    }
-    wrefresh(scroll_win);
+    int buf_x{};
+    int buf_y{};
+
+    // pre-loop stuff
 
     bool running{ true };
+    int ch{};
 
-    char ch{};
+    int space_y{};
+    int linestart{};
+    int testy{};
+
+    // mvprintw(0, 0, "printing begins after this");
+    // refresh();
+    // usleep(1000000);
+
+    // main loop
     while (running) {
-      wrefresh(win); // Refresh to show the box
-      mvprintw(1, 0, "KEY NAME : %s - 0x%02x\n", keyname(ch), ch);
+      // mvprintw(1, 0, "KEY NAME : %s - 0x%02x\n", keyname(ch), ch);
+
+      // read and update file buffer (this will be TERRIBLE btw since i just wanna make a shitty version before the 22nd if possible)
+      clear();
+
+      // calculate spaces, line number, then print buffer
+      maxspacenum = 0;
+      linenum     = 0;
+      linestart   = 0;
+      linesum     = 0;
+      for (int i{}; i < buffer.size(); ++i) {
+        if (buffer[i] == '\n') {
+          ++linesum;
+          if (log10(linesum) == static_cast<int>(log10(linesum))) {
+            ++maxspacenum;
+          }
+        }
+      }
+
+      maxspacenum = static_cast<int>(log10(linesum));
+      linestart   = maxspacenum + 2;
+      // mvprintw(testy, 20, "print line start: %d max space num: %d", linestart, maxspacenum);
+      refresh();
+
+      // spacenum = log10(linesum) / 10;
+
+      // print buffer
+#if 1
+      for (int i{}; i < buffer.size(); ++i) {
+        // doesn't work????
+        // if not newline
+        if (buffer[i] != '\n') {
+          // spaces and line num must print before other stuff
+
+          for (int i{}; i < maxspacenum; ++i) {
+            mvprintw(buf_y, i, " ");
+          }
+          if (log10(linenum) == static_cast<int>(log10(linenum))) {
+            --maxspacenum; // will be currentspacenum soon
+          }
+
+          // mvprintw(buf_y, spacenum, "%d", linenum);
+
+          char* test{ &buffer[i] };
+          // mvprintw(buf_y, 10 + buf_x, &buffer[i]);
+
+          // i lack knowledge! anyways, get your printf format specifiers straight or it's just like yeahhhh print the whole vector instantly (???????) somehow
+          mvprintw(buf_y, linestart + buf_x, "%c", buffer[i]);
+          usleep(2000);
+
+          ++buf_x;
+        } else if (buffer[i] == '\n') {
+          // if this executes after the line num test,it FUCKS up
+          // mvprintw(buf_y, i + 5, &buffer[i]);
+          mvprintw(buf_y, i + 5, "\n");
+          // mvprintw(buf_y, 20, "linenumber %d", linenum);
+          buf_x = 0;
+          ++buf_y;
+          ++linenum;
+        }
+      }
+#endif
+
+      // printw("%c", buffer[1]);
+      refresh();
+
+      // space_y = 0;
+      // for (int i{}; i < LINES; ++i) {
+      //  for (int i{}; i < spacenum; ++i) {
+      //    mvprintw(space_y, i, " ");
+      //  }
+      //  ++space_y;
+      //}
+
+      // failed attempt to reposition cursor where it should be post print
+      move(cur_y, cur_x);
+
+      // mvprintw(0, 40, "TEST!!!");
+
+      refresh();
+      buf_y = 0;
+      buf_x = 0;
+
+      // input
       switch (ch = getch()) {
+      // application functions
       case ctrl('q'): {
-        mvprintw(0, 0, "exiting");
         endwin();
         running = false;
+        break;
       }
-      case ctrl('a'): {
-        mvprintw(0, 0, "ctrl+a");
+      case ctrl('s'): {
+        // save
+        break;
       }
-      }
-      // switch (ch = getch()) {
-      // case '0x1B': {
-      //  endwin();
-      //  running = false;
-      //}
-      //}
-      refresh();
-    }
 
-    endwin();
+      // arrow keys
+      case KEY_UP: {
+        getyx(stdscr, cur_y, cur_x);
+        move(cur_y - 1, cur_x);
+        break;
+      }
+      case KEY_DOWN: {
+        getyx(stdscr, cur_y, cur_x);
+        move(cur_y + 1, cur_x);
+        break;
+      }
+      case KEY_RIGHT: {
+        getyx(stdscr, cur_y, cur_x);
+        move(cur_y, cur_x + 1);
+        break;
+      }
+      case KEY_LEFT: {
+        getyx(stdscr, cur_y, cur_x);
+        move(cur_y, cur_x - 1);
+        break;
+      }
+      }
+    }
 
     // screen size of 10, cursor is at y pos 6,
   }
