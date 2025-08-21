@@ -8,7 +8,6 @@
 #include <string>
 
 // TODO:
-// improve read function so it can print from a chosen position in the file
 // fix line number log10 check on first 9 lines (some dumb shit i forgot probably)
 
 // model of what should happen when opening a file
@@ -113,8 +112,8 @@ namespace Functions {
     using namespace ftxui;
 
     // get file info
-    // fileInfo file(getFileInfo(getPath()));
-    fileInfo file(getFileInfo("burger.txt"));
+    fileInfo file(getFileInfo(getPath()));
+    // fileInfo file(getFileInfo("burger.txt"));
 
     // create file buffer
     vector<char> buffer{ createFileBuffer(file.path) };
@@ -154,8 +153,6 @@ namespace Functions {
     int scrVerticalHalfpoint{ scrY / 2 };
 
     // calculate topmost line
-    // maybe obsolete now that i have ncurses; it provides a scroll thing for me but i may make a custom function
-    // definitely doing a custom function. unironically too lazy to look up how to use windows rn so i'm gonna do like 4 times the effort
     int highestVisibleLine{ (scrVerticalHalfpoint - scrVerticalHalfpoint) + 1 };
 
     // spaces (calculate this every time backspace or enter is pressed)
@@ -211,14 +208,10 @@ namespace Functions {
       }
       maxspacenum = static_cast<int>(log10(linesum));
       linestart   = maxspacenum + 2;
-      // mvprintw(testy, 20, "print line start: %d max space num: %d", linestart, maxspacenum);
-      // mvprintw(testy, 20, "linenum: %d, linesum: %d ", linenum, linesum);
-      // refresh();
 
       // spacenum = log10(linesum) / 10;
 
       // print buffer
-#if 1
 
       // keep track of the topmost visible line, and print from it
 
@@ -226,27 +219,9 @@ namespace Functions {
       bottommostlinenum = topmostlinenum + LINES - 1;
       lineInfo line{ getLineInfo(buffer, topmostlinenum) };
 
-      //  mvprintw(testy, 20, "linenum: %d, linesum: %d, topmostlinenum: %d ", linenum, linesum, topmostlinenum);
-      //  refresh();
-      // mvprintw(0, 40, "line num: %d offset: %d length: %d", line.linenum, line.offset, line.length);
-
-      // int offset{ static_cast<int>(line.offset) };
-
       for (int i{ line.offset }; i < buffer.size(); ++i) {
         // if not newline
         if (buffer[i] != '\n') {
-          // spaces and line num must print before other stuff
-
-          /////////////////////////////////////////////////////
-          ///
-          ///
-          ///
-          /// the issue is that it's not finding space inbetween the nl and other characters, so it literally is just not told to print any line
-          ///
-          ///
-          ///
-          /// /////////////////////////////////////////////////
-
           // i lack knowledge! anyways, get your printf format specifiers straight or it's just like yeahhhh print the whole vector instantly (???????) somehow
           mvprintw(buf_y, linestart + buf_x, "%c", buffer[i]);
           // usleep(10000);
@@ -254,10 +229,6 @@ namespace Functions {
 
           ++buf_x;
         } else if (buffer[i] == '\n') {
-          // it can't print newline in the window for obvious reasons, idk how i'll really do this aside from manual line tracking
-          // mvprintw(buf_y, linestart + buf_x, "%c", buffer[i]);
-          // mvprintw(buf_y, linestart + buf_x, "%c", '\'');
-
           // spaces
           for (int i{}; i < maxspacenum; ++i) {
             mvprintw(buf_y, i, " ");
@@ -277,7 +248,6 @@ namespace Functions {
           }
         }
       }
-#endif
 
       // text edge cursor position checks
 
@@ -286,13 +256,6 @@ namespace Functions {
         ++cursorlinenum;
         ++cur_y;
       }
-      // bottom border
-      // if (cursorlinenum > LINES) {
-      //  --cursorlinenum;
-      //  --cur_y;
-      //  --topmostlinenum;
-      //}
-
       // line number border
       if (cur_x < linestart) {
         cur_x = linestart;
@@ -448,14 +411,6 @@ namespace Functions {
           }
           --cur_y;
 
-          // cur_x = getLineInfo(buffer, cursorlinenum).length;
-
-          // cur_x = getLineInfo(buffer, cursorlinenum);
-
-          // if (bottommostlinenum == linesum) {
-          //  --topmostlinenum;
-          //  --bottommostlinenum;
-          //}
           break;
         }
 
