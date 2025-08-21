@@ -163,7 +163,8 @@ namespace Functions {
     using namespace ftxui;
 
     // get file info
-    fileInfo file(getFileInfo(getPath()));
+    // fileInfo file(getFileInfo(getPath()));
+    fileInfo file(getFileInfo("burger.txt"));
 
     // create file buffer
     vector<char> buffer{ createFileBuffer(file.path) };
@@ -197,9 +198,7 @@ namespace Functions {
 
     // line count, cursor position, screen dimensions, vertical half point
     int currentline{ 1 };
-    int cur_x{ 0 };
-    int cur_y{ 0 };
-    getyx(stdscr, cur_y, cur_x);
+
     int scrY{ LINES };
     int scrX{ COLS };
     int scrVerticalHalfpoint{ scrY / 2 };
@@ -226,13 +225,14 @@ namespace Functions {
     bool running{ true };
     int ch{};
 
-    int space_y{};
     int linestart{};
     int testy{};
 
-    // mvprintw(0, 0, "printing begins after this");
-    // refresh();
-    // usleep(1000000);
+    int cur_x{};
+    int cur_y{};
+    move(0, 0);
+    getyx(stdscr, cur_y, cur_x);
+    int cursorLine{};
 
     // main loop
     while (running) {
@@ -243,7 +243,6 @@ namespace Functions {
 
       // calculate spaces, line number, then print buffer
       maxspacenum = 0;
-      linenum     = 0;
       linestart   = 0;
       linesum     = 0;
       for (int i{}; i < buffer.size(); ++i) {
@@ -254,66 +253,55 @@ namespace Functions {
           }
         }
       }
-
       maxspacenum = static_cast<int>(log10(linesum));
       linestart   = maxspacenum + 2;
       // mvprintw(testy, 20, "print line start: %d max space num: %d", linestart, maxspacenum);
-      refresh();
+      // refresh();
 
       // spacenum = log10(linesum) / 10;
 
-      // print buffer
+      // print buffer (can't handle scrolling yet)
 #if 1
+      linenum         = 1;
+      currentspacenum = maxspacenum;
       for (int i{}; i < buffer.size(); ++i) {
-        // doesn't work????
         // if not newline
         if (buffer[i] != '\n') {
           // spaces and line num must print before other stuff
-
           for (int i{}; i < maxspacenum; ++i) {
             mvprintw(buf_y, i, " ");
           }
-          if (log10(linenum) == static_cast<int>(log10(linenum))) {
-            --maxspacenum; // will be currentspacenum soon
+          for (int i{}; i < maxspacenum; ++i) {
+            mvprintw(buf_y, currentspacenum, "%d", linenum);
           }
-
-          // mvprintw(buf_y, spacenum, "%d", linenum);
-
-          char* test{ &buffer[i] };
-          // mvprintw(buf_y, 10 + buf_x, &buffer[i]);
 
           // i lack knowledge! anyways, get your printf format specifiers straight or it's just like yeahhhh print the whole vector instantly (???????) somehow
           mvprintw(buf_y, linestart + buf_x, "%c", buffer[i]);
-          usleep(2000);
+          // usleep(10000);
+          // refresh();
 
           ++buf_x;
         } else if (buffer[i] == '\n') {
-          // if this executes after the line num test,it FUCKS up
-          // mvprintw(buf_y, i + 5, &buffer[i]);
-          mvprintw(buf_y, i + 5, "\n");
-          // mvprintw(buf_y, 20, "linenumber %d", linenum);
+          // it can't print newline in the window for obvious reasons, idk how i'll really do this aside from manual line tracking
+          // mvprintw(buf_y, linestart + buf_x, "%c", buffer[i]);
+          mvprintw(buf_y, linestart + buf_x, "%c", '\'');
           buf_x = 0;
-          ++buf_y;
+          ++buf_y; // in place of a \n, it keeps things smoother i think
           ++linenum;
+          // this may fuck up when printing from a direct power of ten, but i'm not sure yet
+          if (log10(linenum) == static_cast<int>(log10(linenum)) && linenum != 1) {
+            --currentspacenum;
+          }
         }
       }
 #endif
 
-      // printw("%c", buffer[1]);
-      refresh();
-
-      // space_y = 0;
-      // for (int i{}; i < LINES; ++i) {
-      //  for (int i{}; i < spacenum; ++i) {
-      //    mvprintw(space_y, i, " ");
-      //  }
-      //  ++space_y;
-      //}
-
       // failed attempt to reposition cursor where it should be post print
+      // move(cur_y, linestart);
+      if (cur_x < linestart) {
+        cur_x = linestart;
+      }
       move(cur_y, cur_x);
-
-      // mvprintw(0, 40, "TEST!!!");
 
       refresh();
       buf_y = 0;
@@ -334,29 +322,32 @@ namespace Functions {
 
       // arrow keys
       case KEY_UP: {
-        getyx(stdscr, cur_y, cur_x);
-        move(cur_y - 1, cur_x);
+        --cur_y;
         break;
       }
       case KEY_DOWN: {
-        getyx(stdscr, cur_y, cur_x);
-        move(cur_y + 1, cur_x);
+        ++cur_y;
         break;
       }
       case KEY_RIGHT: {
-        getyx(stdscr, cur_y, cur_x);
-        move(cur_y, cur_x + 1);
+        if (inch() == '\'') {
+          break;
+        }
+
+        ++cur_x;
         break;
       }
       case KEY_LEFT: {
-        getyx(stdscr, cur_y, cur_x);
-        move(cur_y, cur_x - 1);
+        // idk if i really need two checks for this but whatever
+        if (cur_x < linestart) {
+          cur_x = linestart;
+          break;
+        }
+        --cur_x;
         break;
       }
       }
     }
-
-    // screen size of 10, cursor is at y pos 6,
   }
 
   void mainLoopftxui() {
@@ -393,7 +384,7 @@ namespace Functions {
 
     bool running{ true };
 
-    int i{ 0 };
+    [[maybe_unused]] int i{ 0 };
     // while (running != false) {
     for (i; i < 500; ++i) {
       // screen.Active();
