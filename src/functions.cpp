@@ -93,6 +93,13 @@ namespace Functions {
     return line;
   }
 
+  void saveFile(vector<char>& buffer, string path) {
+    ofstream outputfile(path, fstream::out | fstream::trunc);
+    for (int i{}; i < buffer.size(); ++i) {
+      outputfile << buffer[i];
+    }
+  }
+
   string getPath() {
     cout << "Enter path: ";
     string path{};
@@ -179,6 +186,11 @@ namespace Functions {
     move(0, 0);
     getyx(stdscr, cur_y, cur_x);
     int cursorlinenum{ 1 };
+
+    string forbiddenchars{ "asdf" };
+    bool saved{ false };
+
+    // ofstream outputFile(file.path);
 
     // main loop
     while (running) {
@@ -302,21 +314,44 @@ namespace Functions {
       int textcurpos = currentline.offset + (cur_x - linestart);
 
       // input
-      switch (ch = getch()) {
+      ch = getch();
+
+      switch (ch) {
       // application functions
       case ctrl('q'): {
-        endwin();
-        running = false;
+        if (saved == true) {
+        thing:
+          // clean up
+          endwin();
+          running = false;
+        } else {
+          clear();
+          printw("Quit without saving? y/n ");
+          switch (getch()) {
+          case 'y': {
+            endwin();
+            running = false;
+            break;
+          }
+          case 'n': {
+            break;
+          }
+          default: {
+            goto thing;
+          }
+          }
+        }
         break;
       }
       case ctrl('s'): {
         // save
+        saveFile(buffer, file.path);
+        saved = true; // this will work only once the way i have it lol
+
         break;
       }
 
       // navigation (arrow keys etc.)
-
-      // for vertical movement, +/- cur_y will be replaced by an adaptive scroll function soon
       case KEY_UP: {
         // all this code is pretty messy
         if (cursorlinenum == 1) {
@@ -428,7 +463,17 @@ namespace Functions {
         break;
       }
 
-        // actual character input
+      // standard input
+      default: {
+        // for (int i{}; i < forbiddenchars.length(); ++i) {
+        //  if (ch == forbiddenchars[i]) {
+        //    break;
+        //  }
+        //}
+        insert(buffer, textcurpos, ch);
+        ++cur_x;
+        break;
+      }
       }
     }
   }
