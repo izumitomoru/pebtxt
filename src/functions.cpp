@@ -8,8 +8,8 @@
 #include <string>
 
 // TODO:
-// improve read function so it can print just the size of the terminal, and from a chosen position in the file
-// get started on learning ftxui elements and input making it work with buffers for initial edit functions and stuff
+// improve read function so it can print from a chosen position in the file
+// implement scrolling using line number tracking system that already works quite well apparently
 
 // model of what should happen when opening a file
 // 1. create screen to fit terminal size
@@ -17,12 +17,8 @@
 // 3. loop to print buffer on and wait for user inputs (scroll, hit key or backspace)
 // 4. on save, overwrite file contents with buffer contents
 
-// print loop
-// clear screen (if needed, check if text in a line was updated and only render that one (speed efficient but annoying for right now))
-// print buffer contents, making sure everything is in the same place last frame, as well as current line number
-
-// will need:
-// checks for line number, a loop to get to iterate to a certain line number when adding and removing lines
+// scrolling model (for now) gonna make it just when you reach the bottom screen part
+// 1. track line number, when line number exceeds screen lines, downshift everything
 //
 
 namespace Functions {
@@ -64,92 +60,37 @@ namespace Functions {
     return info;
   }
 
-  void writeDummyLines(string path, int linenum) {
-    // thing to write dummy lines
-    ofstream sfile(path, fstream::out | fstream::trunc);
-    for (int i{ 1 }; i <= linenum; ++i) {
-      sfile << "line " + to_string(i) << '\n';
-    }
-    sfile.close();
-  }
-
   // rewrote this on so much sleep deprivation, i tried to fix the 1 number difference in this state but failed
-  string getLine(vector<char>& buffer, int lineNum) {
-    using namespace GapBuffer;
-    // fileInfo file{ getFileInfo(path) };
-    // vector<char> buffer{ createFileBuffer(file.path) };
-
-    string line{};
+  lineInfo getLineInfo(vector<char>& buffer, int lineNum) {
+    string linestr{};
     int currentlinenum{ 1 };
+    int offset{};
 
-    // print buffer contents
     for (int i{}; currentlinenum < lineNum + 1; ++i) {
-      // cout << "iter: " << i << '\n';
-      if (buffer[i] == '\n') {
+      // add to string if line is proper, when next line found, stop
+      if (buffer[i] != '\n' && currentlinenum == lineNum) {
+        linestr += buffer[i];
+      } else if (buffer[i] == '\n') { // if nl, increment line number
         ++currentlinenum;
       }
 
-      if (currentlinenum == lineNum && buffer[i] != '\n') {
-        // cout << "test\n";
-        line += buffer[i];
+      // separate this
+      if (buffer[i] == '\n' && currentlinenum == lineNum) {
+        // line number matches up,
+        offset = i + 1;
       }
     }
 
-    // cout << "Line " << currentlinenum - 1 << ": " << line;
+    // works
+    int length = linestr.length();
+
+    lineInfo line{
+      linestr,
+      lineNum,
+      offset,
+      length,
+    };
     return line;
-  }
-
-  void readFile(const string path) {
-    using namespace GapBuffer;
-    // get file info and create gap buffer
-    fileInfo file{ getFileInfo(path) };
-    // const string path{ file.path };
-    cout << "Path: " << file.path << '\n';
-    vector<char> buffer{ createFileBuffer(file.path) };
-
-    // get spaces
-    int spacenum = file.lineLog10;
-    string spacestr{};
-    for (int i{ 0 }; i < spacenum; ++i) {
-      // idk which one of these is the most efficient
-      spacestr += ' ';
-      // spacestr = spacestr + ' ';
-      // spacestr.append(" ");
-    }
-
-    // horrific system i will change when the first line onscreen isn't the first
-    int linenum{ 1 };
-    // print for first line specifically
-    cout << spacestr << linenum << ' ';
-
-    // print buffer contents
-    for (int i{}; i < buffer.size(); ++i) {
-      // if not newline, print character
-      if (buffer[i] != '\n') {
-        cout << buffer[i];
-      } else {
-        // print newline
-        cout << buffer[i];
-
-        // increment line number
-        ++linenum;
-
-        // check if line number is a power of 10
-        if (log10(linenum) == static_cast<int>(log10(linenum))) {
-          // cout << "is int\n";
-          // decrement spacenum BEFORE resizing, this took 20 - 30 minutes to figure out, my brain's so fried
-          --spacenum;
-          spacestr.resize(spacenum);
-        }
-
-        // print line
-        cout << spacestr << linenum << ' ';
-      }
-    }
-  }
-
-  int getLineLength(vector<char>& buffer, int lineNum) {
-    return getLine(buffer, lineNum).length();
   }
 
   string getPath() {
@@ -218,6 +159,8 @@ namespace Functions {
     // line number
     int linenum{ 0 };
     int linesum{ 0 };
+    int topmostlinenum{ 1 };
+    int bufferlineoffset{};
 
     int buf_x{};
     int buf_y{};
@@ -262,11 +205,22 @@ namespace Functions {
 
       // spacenum = log10(linesum) / 10;
 
-      // print buffer (can't handle scrolling yet)
+      // print buffer
 #if 1
-      linenum         = 1;
-      currentspacenum = maxspacenum;
-      for (int i{}; i < buffer.size(); ++i) {
+
+      // keep track of the topmost visible line, and print from it
+      lineInfo line{ getLineInfo(buffer, 6) };
+      // mvprintw(0, 40, "line num: %d offset: %d length: %d", line.linenum, line.offset, line.length);
+
+      /////////////////////// NOTE
+      /// somewhere in here i lost the thing setting line number every loop
+      /// fix that tomorrow!!!!!!!!!!
+
+      topmostlinenum = 1;
+
+      // int offset{ static_cast<int>(line.offset) };
+
+      for (int i{ line.offset }; i < buffer.size(); ++i) {
         // if not newline
         if (buffer[i] != '\n') {
           // spaces and line num must print before other stuff
@@ -299,23 +253,29 @@ namespace Functions {
 #endif
 
       // text edge cursor position checks
+
+      // top border
       if (cursorlinenum < 1 && cur_y < 0) {
         ++cursorlinenum;
         ++cur_y;
         // cursorlinenum = 1;
         // cur_y         = 0;
       }
+      // bottom border
       if (cursorlinenum > linesum) {
         --cursorlinenum;
         --cur_y;
       }
+      // line number border
       if (cur_x < linestart) {
         cur_x = linestart;
       }
-      // iterate through buffer using cursorlinenum, then find length from \n to \n, if cur_x is larger decrement
-      if (cur_x > linestart + getLineLength(buffer, cursorlinenum) - 1) {
-        cur_x = linestart + getLineLength(buffer, cursorlinenum) - 1;
+      // line end border
+      if (cur_x > linestart + getLineInfo(buffer, cursorlinenum).length - 1) {
+        cur_x = linestart + getLineInfo(buffer, cursorlinenum).length - 1;
       }
+
+      // handle scrolling (arrow keys only for now)
 
       move(cur_y, cur_x);
 
@@ -365,6 +325,68 @@ namespace Functions {
       }
     }
   }
+
+#if 0
+  void writeDummyLines(string path, int linenum) {
+    // thing to write dummy lines
+    ofstream sfile(path, fstream::out | fstream::trunc);
+    for (int i{ 1 }; i <= linenum; ++i) {
+      sfile << "line " + to_string(i) << '\n';
+    }
+    sfile.close();
+  }
+#endif
+
+#if 0
+  void readFile(const string path) {
+    using namespace GapBuffer;
+    // get file info and create gap buffer
+    fileInfo file{ getFileInfo(path) };
+    // const string path{ file.path };
+    cout << "Path: " << file.path << '\n';
+    vector<char> buffer{ createFileBuffer(file.path) };
+
+    // get spaces
+    int spacenum = file.lineLog10;
+    string spacestr{};
+    for (int i{ 0 }; i < spacenum; ++i) {
+      // idk which one of these is the most efficient
+      spacestr += ' ';
+      // spacestr = spacestr + ' ';
+      // spacestr.append(" ");
+    }
+
+    // horrific system i will change when the first line onscreen isn't the first
+    int linenum{ 1 };
+    // print for first line specifically
+    cout << spacestr << linenum << ' ';
+
+    // print buffer contents
+    for (int i{}; i < buffer.size(); ++i) {
+      // if not newline, print character
+      if (buffer[i] != '\n') {
+        cout << buffer[i];
+      } else {
+        // print newline
+        cout << buffer[i];
+
+        // increment line number
+        ++linenum;
+
+        // check if line number is a power of 10
+        if (log10(linenum) == static_cast<int>(log10(linenum))) {
+          // cout << "is int\n";
+          // decrement spacenum BEFORE resizing, this took 20 - 30 minutes to figure out, my brain's so fried
+          --spacenum;
+          spacestr.resize(spacenum);
+        }
+
+        // print line
+        cout << spacestr << linenum << ' ';
+      }
+    }
+  }
+#endif
 
 #if 0
   void mainLoopftxui() {

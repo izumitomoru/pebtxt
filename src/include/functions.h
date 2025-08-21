@@ -37,6 +37,13 @@ namespace Functions {
     int charSum{};
   };
   fileInfo getFileInfo(const string);
+  struct lineInfo {
+    string str{};
+    int linenum{};
+    int offset{};
+    int length{};
+  };
+  lineInfo getLineInfo(vector<char>&, int);
   void readFile(const string);
   void readftxui(const string);
   void writeDummyLines(string, int);
