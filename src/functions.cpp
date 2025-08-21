@@ -30,8 +30,6 @@ namespace Functions {
   // default path for files
   const string defaultpath{ "./files/" };
   const string defaultcachepath{ "./cache/" };
-  // const string defaultpath{ "/run/media/pebarch/pebdrive/_Code/C++/filetests/files/" };
-  // const string cachepath{ "/run/media/pebarch/pebdrive/_Code/C++/filetests/cache/" };
 
   // making very inefficient copies at the moment, but it's workable
   fileInfo getFileInfo(string path) {
@@ -76,10 +74,10 @@ namespace Functions {
   }
 
   // rewrote this on so much sleep deprivation, i tried to fix the 1 number difference in this state but failed
-  string getLine(const string path, int lineNum) {
+  string getLine(vector<char>& buffer, int lineNum) {
     using namespace GapBuffer;
-    fileInfo file{ getFileInfo(path) };
-    vector<char> buffer{ createFileBuffer(file.path) };
+    // fileInfo file{ getFileInfo(path) };
+    // vector<char> buffer{ createFileBuffer(file.path) };
 
     string line{};
     int currentlinenum{ 1 };
@@ -148,6 +146,10 @@ namespace Functions {
         cout << spacestr << linenum << ' ';
       }
     }
+  }
+
+  int getLineLength(vector<char>& buffer, int lineNum) {
+    return getLine(buffer, lineNum).length();
   }
 
   string getPath() {
@@ -232,7 +234,7 @@ namespace Functions {
     int cur_y{};
     move(0, 0);
     getyx(stdscr, cur_y, cur_x);
-    int cursorLine{};
+    int cursorlinenum{ 1 };
 
     // main loop
     while (running) {
@@ -284,7 +286,7 @@ namespace Functions {
         } else if (buffer[i] == '\n') {
           // it can't print newline in the window for obvious reasons, idk how i'll really do this aside from manual line tracking
           // mvprintw(buf_y, linestart + buf_x, "%c", buffer[i]);
-          mvprintw(buf_y, linestart + buf_x, "%c", '\'');
+          // mvprintw(buf_y, linestart + buf_x, "%c", '\'');
           buf_x = 0;
           ++buf_y; // in place of a \n, it keeps things smoother i think
           ++linenum;
@@ -296,11 +298,25 @@ namespace Functions {
       }
 #endif
 
-      // failed attempt to reposition cursor where it should be post print
-      // move(cur_y, linestart);
+      // text edge cursor position checks
+      if (cursorlinenum < 1 && cur_y < 0) {
+        ++cursorlinenum;
+        ++cur_y;
+        // cursorlinenum = 1;
+        // cur_y         = 0;
+      }
+      if (cursorlinenum > linesum) {
+        --cursorlinenum;
+        --cur_y;
+      }
       if (cur_x < linestart) {
         cur_x = linestart;
       }
+      // iterate through buffer using cursorlinenum, then find length from \n to \n, if cur_x is larger decrement
+      if (cur_x > linestart + getLineLength(buffer, cursorlinenum) - 1) {
+        cur_x = linestart + getLineLength(buffer, cursorlinenum) - 1;
+      }
+
       move(cur_y, cur_x);
 
       refresh();
@@ -321,19 +337,19 @@ namespace Functions {
       }
 
       // arrow keys
+
+      // for vertical movement, +/- cur_y will be replaced by an adaptive scroll function soon
       case KEY_UP: {
+        --cursorlinenum;
         --cur_y;
         break;
       }
       case KEY_DOWN: {
+        ++cursorlinenum;
         ++cur_y;
         break;
       }
       case KEY_RIGHT: {
-        if (inch() == '\'') {
-          break;
-        }
-
         ++cur_x;
         break;
       }
@@ -350,6 +366,7 @@ namespace Functions {
     }
   }
 
+#if 0
   void mainLoopftxui() {
     using namespace GapBuffer;
     using namespace ftxui;
@@ -413,6 +430,7 @@ namespace Functions {
     // Render(screen, thing);
     // Render(screen, contents);
   }
+#endif
 
   // probably not even needed
   // void openExistingFile(string path) {

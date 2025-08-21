@@ -34,7 +34,7 @@ void getinput() {
     cout << "Go to line: ";
     int lineNum{};
     cin >> lineNum;
-    cout << "Line " << lineNum << ": " << getLine(path, lineNum);
+    // cout << "Line " << lineNum << ": " << getLine(path, lineNum);
     break;
   }
   case 4: {
