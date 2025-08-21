@@ -9,7 +9,7 @@
 
 // TODO:
 // improve read function so it can print from a chosen position in the file
-// implement scrolling using line number tracking system that already works quite well apparently
+// fix line number log10 check on first 9 lines (some dumb shit i forgot probably)
 
 // model of what should happen when opening a file
 // 1. create screen to fit terminal size
@@ -160,6 +160,7 @@ namespace Functions {
     int linenum{ 0 };
     int linesum{ 0 };
     int topmostlinenum{ 1 };
+    int bottommostlinenum{ LINES };
     int bufferlineoffset{};
 
     int buf_x{};
@@ -181,15 +182,13 @@ namespace Functions {
 
     // main loop
     while (running) {
-      // mvprintw(1, 0, "KEY NAME : %s - 0x%02x\n", keyname(ch), ch);
-
-      // read and update file buffer (this will be TERRIBLE btw since i just wanna make a shitty version before the 22nd if possible)
       clear();
 
       // calculate spaces, line number, then print buffer
-      maxspacenum = 0;
-      linestart   = 0;
-      linesum     = 0;
+      currentspacenum = 0;
+      maxspacenum     = 0;
+      linestart       = 0;
+      linesum         = 0;
       for (int i{}; i < buffer.size(); ++i) {
         if (buffer[i] == '\n') {
           ++linesum;
@@ -201,6 +200,7 @@ namespace Functions {
       maxspacenum = static_cast<int>(log10(linesum));
       linestart   = maxspacenum + 2;
       // mvprintw(testy, 20, "print line start: %d max space num: %d", linestart, maxspacenum);
+      // mvprintw(testy, 20, "linenum: %d, linesum: %d ", linenum, linesum);
       // refresh();
 
       // spacenum = log10(linesum) / 10;
@@ -209,14 +209,14 @@ namespace Functions {
 #if 1
 
       // keep track of the topmost visible line, and print from it
-      lineInfo line{ getLineInfo(buffer, 6) };
+
+      linenum           = topmostlinenum;
+      bottommostlinenum = topmostlinenum + LINES - 1;
+      lineInfo line{ getLineInfo(buffer, topmostlinenum) };
+
+      //  mvprintw(testy, 20, "linenum: %d, linesum: %d, topmostlinenum: %d ", linenum, linesum, topmostlinenum);
+      //  refresh();
       // mvprintw(0, 40, "line num: %d offset: %d length: %d", line.linenum, line.offset, line.length);
-
-      /////////////////////// NOTE
-      /// somewhere in here i lost the thing setting line number every loop
-      /// fix that tomorrow!!!!!!!!!!
-
-      topmostlinenum = 1;
 
       // int offset{ static_cast<int>(line.offset) };
 
@@ -224,11 +224,15 @@ namespace Functions {
         // if not newline
         if (buffer[i] != '\n') {
           // spaces and line num must print before other stuff
+
+          // spaces
           for (int i{}; i < maxspacenum; ++i) {
             mvprintw(buf_y, i, " ");
           }
+          // line number
+          // this gets offset when topmostline is another power of 10
           for (int i{}; i < maxspacenum; ++i) {
-            mvprintw(buf_y, currentspacenum, "%d", linenum);
+            mvprintw(buf_y, currentspacenum + 1, "%d", linenum);
           }
 
           // i lack knowledge! anyways, get your printf format specifiers straight or it's just like yeahhhh print the whole vector instantly (???????) somehow
@@ -245,7 +249,7 @@ namespace Functions {
           ++buf_y; // in place of a \n, it keeps things smoother i think
           ++linenum;
           // this may fuck up when printing from a direct power of ten, but i'm not sure yet
-          if (log10(linenum) == static_cast<int>(log10(linenum)) && linenum != 1) {
+          if (log10(linenum) == static_cast<int>(log10(linenum))) {
             --currentspacenum;
           }
         }
@@ -258,14 +262,14 @@ namespace Functions {
       if (cursorlinenum < 1 && cur_y < 0) {
         ++cursorlinenum;
         ++cur_y;
-        // cursorlinenum = 1;
-        // cur_y         = 0;
       }
       // bottom border
-      if (cursorlinenum > linesum) {
-        --cursorlinenum;
-        --cur_y;
-      }
+      // if (cursorlinenum > LINES) {
+      //  --cursorlinenum;
+      //  --cur_y;
+      //  --topmostlinenum;
+      //}
+
       // line number border
       if (cur_x < linestart) {
         cur_x = linestart;
@@ -300,11 +304,37 @@ namespace Functions {
 
       // for vertical movement, +/- cur_y will be replaced by an adaptive scroll function soon
       case KEY_UP: {
+        // all this code is pretty messy
+        if (cursorlinenum == 1) {
+          break;
+        }
+        // scroll up
+        if (cur_y > LINES / 2 || topmostlinenum == 1) {
+          --cursorlinenum;
+          --cur_y;
+          break;
+        }
+        if (cur_y == 0 || cursorlinenum > LINES / 2) {
+          --topmostlinenum;
+          --bottommostlinenum;
+          --cursorlinenum;
+          break;
+        }
         --cursorlinenum;
         --cur_y;
         break;
       }
       case KEY_DOWN: {
+        if (cursorlinenum == linesum) {
+          break;
+        }
+        // scroll down
+        if (cursorlinenum + 1 > LINES / 2 && bottommostlinenum != linesum) {
+          ++topmostlinenum;
+          ++bottommostlinenum;
+          ++cursorlinenum;
+          break;
+        }
         ++cursorlinenum;
         ++cur_y;
         break;
@@ -326,7 +356,7 @@ namespace Functions {
     }
   }
 
-#if 0
+#if 1
   void writeDummyLines(string path, int linenum) {
     // thing to write dummy lines
     ofstream sfile(path, fstream::out | fstream::trunc);

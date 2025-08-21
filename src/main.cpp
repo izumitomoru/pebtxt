@@ -90,6 +90,7 @@ void testscreen() {
 int main() {
   using namespace Functions;
   // getinput();
+  // writeDummyLines("./files/burger.txt", 125);
   mainLoop();
 
   return 0;

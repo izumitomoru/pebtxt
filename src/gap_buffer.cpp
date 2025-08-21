@@ -34,12 +34,6 @@ namespace GapBuffer {
     return buffer;
   }
 
-  void printBuffer(vector<char>& buffer) {
-    for (int i{}; i < buffer.size(); ++i) {
-      cout << buffer[i];
-    }
-  }
-
   void insert(vector<char>& buffer, int pos, string text) {
     for (int i{}; i < text.length(); ++i, ++pos) {
       buffer.insert(buffer.begin() + pos, text[i]);
@@ -48,6 +42,12 @@ namespace GapBuffer {
 
   void remove(vector<char>& buffer, int pos) {
     buffer.erase(buffer.begin() + pos);
+  }
+
+  void printBuffer(vector<char>& buffer) {
+    for (int i{}; i < buffer.size(); ++i) {
+      cout << buffer[i];
+    }
   }
 
 } // namespace GapBuffer
