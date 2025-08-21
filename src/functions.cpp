@@ -225,15 +225,15 @@ namespace Functions {
         if (buffer[i] != '\n') {
           // spaces and line num must print before other stuff
 
-          // spaces
-          for (int i{}; i < maxspacenum; ++i) {
-            mvprintw(buf_y, i, " ");
-          }
-          // line number
-          // this gets offset when topmostline is another power of 10
-          for (int i{}; i < maxspacenum; ++i) {
-            mvprintw(buf_y, currentspacenum + 1, "%d", linenum);
-          }
+          /////////////////////////////////////////////////////
+          ///
+          ///
+          ///
+          /// the issue is that it's not finding space inbetween the nl and other characters, so it literally is just not told to print any line
+          ///
+          ///
+          ///
+          /// /////////////////////////////////////////////////
 
           // i lack knowledge! anyways, get your printf format specifiers straight or it's just like yeahhhh print the whole vector instantly (???????) somehow
           mvprintw(buf_y, linestart + buf_x, "%c", buffer[i]);
@@ -245,6 +245,17 @@ namespace Functions {
           // it can't print newline in the window for obvious reasons, idk how i'll really do this aside from manual line tracking
           // mvprintw(buf_y, linestart + buf_x, "%c", buffer[i]);
           // mvprintw(buf_y, linestart + buf_x, "%c", '\'');
+
+          // spaces
+          for (int i{}; i < maxspacenum; ++i) {
+            mvprintw(buf_y, i, " ");
+          }
+          // line number
+          // this gets offset when topmostline is another power of 10
+          for (int i{}; i < maxspacenum; ++i) {
+            mvprintw(buf_y, currentspacenum + 1, "%d", linenum);
+          }
+
           buf_x = 0;
           ++buf_y; // in place of a \n, it keeps things smoother i think
           ++linenum;
@@ -275,8 +286,8 @@ namespace Functions {
         cur_x = linestart;
       }
       // line end border
-      if (cur_x > linestart + getLineInfo(buffer, cursorlinenum).length - 1) {
-        cur_x = linestart + getLineInfo(buffer, cursorlinenum).length - 1;
+      if (cur_x > linestart + getLineInfo(buffer, cursorlinenum).length) {
+        cur_x = linestart + getLineInfo(buffer, cursorlinenum).length;
       }
 
       // handle scrolling (arrow keys only for now)
@@ -286,6 +297,9 @@ namespace Functions {
       refresh();
       buf_y = 0;
       buf_x = 0;
+
+      lineInfo currentline{ getLineInfo(buffer, cursorlinenum) };
+      int textcurpos = currentline.offset + (cur_x - linestart);
 
       // input
       switch (ch = getch()) {
@@ -300,7 +314,7 @@ namespace Functions {
         break;
       }
 
-      // arrow keys
+      // navigation (arrow keys etc.)
 
       // for vertical movement, +/- cur_y will be replaced by an adaptive scroll function soon
       case KEY_UP: {
@@ -352,6 +366,69 @@ namespace Functions {
         --cur_x;
         break;
       }
+      case '\n': {
+        // testing
+
+        insert(buffer, textcurpos, '\n');
+        ++cursorlinenum;
+        cur_x = linestart;
+
+        if (topmostlinenum != 1) {
+          ++topmostlinenum;
+          break;
+        }
+
+        ++cur_y;
+
+        // insert(buffer, textcurpos, ' ');
+        break;
+        // insert(buffer, 5, '\n');
+      }
+      case KEY_BACKSPACE: {
+        // do nothing on 0,0
+        if (cursorlinenum == 1 && cur_x == linestart) {
+          break;
+        }
+
+        // regular char
+        if (cur_x != linestart) {
+          remove(buffer, textcurpos - 1);
+          --cur_x;
+          break;
+        }
+
+        // backspacing on newline
+        else if (cur_x == linestart) {
+          // get length of line above it
+          lineInfo above{ getLineInfo(buffer, cursorlinenum - 1) };
+          remove(buffer, textcurpos - 1);
+
+          --cursorlinenum;
+          cur_x = linestart + above.length;
+
+          if (topmostlinenum != 1) {
+            --topmostlinenum;
+            //--bottommostlinenum;
+            break;
+          }
+          --cur_y;
+
+          // cur_x = getLineInfo(buffer, cursorlinenum).length;
+
+          // cur_x = getLineInfo(buffer, cursorlinenum);
+
+          // if (bottommostlinenum == linesum) {
+          //  --topmostlinenum;
+          //  --bottommostlinenum;
+          //}
+          break;
+        }
+
+        // regular char removal
+        break;
+      }
+
+        // actual character input
       }
     }
   }

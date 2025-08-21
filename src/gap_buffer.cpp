@@ -34,10 +34,11 @@ namespace GapBuffer {
     return buffer;
   }
 
-  void insert(vector<char>& buffer, int pos, string text) {
-    for (int i{}; i < text.length(); ++i, ++pos) {
-      buffer.insert(buffer.begin() + pos, text[i]);
-    }
+  void insert(vector<char>& buffer, int pos, char ch) {
+    // for (int i{}; i < text.length(); ++i, ++pos) {
+    //  buffer.insert(buffer.begin() + pos, text[i]);
+    //}
+    buffer.insert(buffer.begin() + pos, ch);
   }
 
   void remove(vector<char>& buffer, int pos) {

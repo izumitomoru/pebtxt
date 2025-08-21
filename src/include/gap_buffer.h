@@ -9,7 +9,7 @@ namespace GapBuffer {
   using namespace std;
   vector<char> createFileBuffer(const string path);
   void printBuffer(vector<char>& buffer);
-  void insert(vector<char>& buffer, int pos, string text);
+  void insert(vector<char>& buffer, int pos, char ch);
   void remove(vector<char>& buffer, int pos);
 } // namespace GapBuffer
 #endif
