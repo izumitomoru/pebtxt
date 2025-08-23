@@ -1,8 +1,7 @@
 #include "functions.h"
-#include "gap_buffer.h"
-#include <ftxui/dom/elements.hpp>
 
 // i like to section off most of my code in functions (inefficient as fuck) for my sanity
+#if 0
 void getinput() {
   using namespace std;
   using namespace Functions;
@@ -86,12 +85,26 @@ void testscreen() {
   while (true)
     ;
 }
+#endif
+
+void testinputs() {
+  initscr();
+  raw();
+  while (true) {
+    int ch = getch();
+    mvprintw(1, 0, "KEY NAME : %s - 0x%02x\n", keyname(ch), ch);
+    if (ch == 'q') {
+      return;
+    }
+    refresh();
+  }
+}
 
 int main() {
   using namespace Functions;
   // getinput();
   // writeDummyLines("./files/burger.txt", 125);
   mainLoop();
-
+  // testinputs();
   return 0;
 }

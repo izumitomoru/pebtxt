@@ -1,14 +1,10 @@
 #include "functions.h"
-#include <algorithm>
-#include <charconv>
-#include <cstring>
-#include <ftxui/component/loop.hpp>
-#include <ftxui/component/screen_interactive.hpp>
-#include <ncurses.h>
-#include <string>
 
 // TODO:
 // fix line number log10 check on first 9 lines (some dumb shit i forgot probably)
+// handle creating new files, and invalid filenames
+// add mouse scrolling (maybe not, this looks awful on ncurse)
+// better error handling (can't open files under 1 char, line number broken, etc.)
 
 // model of what should happen when opening a file
 // 1. create screen to fit terminal size
@@ -59,7 +55,6 @@ namespace Functions {
     return info;
   }
 
-  // rewrote this on so much sleep deprivation, i tried to fix the 1 number difference in this state but failed
   lineInfo getLineInfo(vector<char>& buffer, int lineNum) {
     string linestr{};
     int currentlinenum{ 1 };
@@ -92,8 +87,60 @@ namespace Functions {
     return line;
   }
 
+  // using vectors really sucks but i gotta get something tangible here
+  vector<char> createFileBuffer(fileInfo file) {
+    // fileInfo file{ getFileInfo(path) };
+    // cout << "Path: " << path;
+    ifstream sfile(file.path);
+
+    vector<char> buffer{};
+
+    if (file.charSum > 0) {
+      while (sfile.is_open()) {
+        // line to read
+        string line{};
+        // track line number manually
+        [[maybe_unused]] int linenum{};
+
+        // add file lines to buffer
+        while (getline(sfile, line)) {
+          for (int i{}; i < line.size(); ++i) {
+            buffer.push_back(line[i]);
+          }
+          buffer.push_back('\n');
+          // test.push_back(line += '\n');
+          // GapBuffer::createTestBuffer();
+        }
+        sfile.close();
+      }
+    } else {
+      buffer.push_back(' ');
+      sfile.close();
+    }
+    // test to see if buffer was created successfully
+    // cout << buffer[3] << '\n';
+    return buffer;
+  }
+
+  void insert(vector<char>& buffer, int pos, char ch) {
+    // for (int i{}; i < text.length(); ++i, ++pos) {
+    //  buffer.insert(buffer.begin() + pos, text[i]);
+    //}
+    buffer.insert(buffer.begin() + pos, ch);
+  }
+
+  void remove(vector<char>& buffer, int pos) {
+    buffer.erase(buffer.begin() + pos);
+  }
+
+  void printBuffer(vector<char>& buffer) {
+    for (int i{}; i < buffer.size(); ++i) {
+      cout << buffer[i];
+    }
+  }
+
   void saveFile(vector<char>& buffer, string path) {
-    ofstream outputfile(path, fstream::out | fstream::trunc);
+    fstream outputfile(path, fstream::in | fstream::out | fstream::trunc);
     for (int i{}; i < buffer.size(); ++i) {
       outputfile << buffer[i];
     }
@@ -108,7 +155,6 @@ namespace Functions {
   }
 
   void mainLoop() {
-    using namespace GapBuffer;
     using namespace ftxui;
 
     // get file info
@@ -116,10 +162,14 @@ namespace Functions {
     // fileInfo file(getFileInfo("burger.txt"));
 
     // create file buffer
-    vector<char> buffer{ createFileBuffer(file.path) };
+    vector<char> buffer{ createFileBuffer(file) };
 
     // create screen fitting the terminal
     initscr();
+    if (has_colors()) {
+      start_color();
+      init_color(8, 0, 90, 255); // first parameter is the ID
+    }
 
     // window snippet
     // WINDOW* win;
@@ -137,6 +187,8 @@ namespace Functions {
     // also apparently for ctrl+q you NEED to use raw()
     // cbreak();
     raw();
+    set_escdelay(0);
+    // qiflush();
 
     // don't echo during getch()
     noecho();
@@ -184,8 +236,11 @@ namespace Functions {
     getyx(stdscr, cur_y, cur_x);
     int cursorlinenum{ 1 };
 
+    // vim-like command mode so i can stop fucking using arrow keys
+    bool command_mode{ true };
+
     string forbiddenchars{ "asdf" };
-    bool saved{ false };
+    bool saved{ true };
 
     // ofstream outputFile(file.path);
 
@@ -234,10 +289,13 @@ namespace Functions {
             mvprintw(buf_y, i, " ");
           }
           // line number
+          init_pair(1, 8, COLOR_BLACK);
+          attron(8);
           // this gets offset when topmostline is another power of 10
           for (int i{}; i < maxspacenum; ++i) {
             mvprintw(buf_y, currentspacenum + 1, "%d", linenum);
           }
+          attroff(COLOR_PAIR(8));
 
           buf_x = 0;
           ++buf_y; // in place of a \n, it keeps things smoother i think
@@ -250,7 +308,7 @@ namespace Functions {
       }
 
       // text edge cursor position checks
-
+      lineInfo check_line{ getLineInfo(buffer, cursorlinenum) };
       // top border
       if (cursorlinenum < 1 && cur_y < 0) {
         ++cursorlinenum;
@@ -261,15 +319,27 @@ namespace Functions {
         cur_x = linestart;
       }
       // line end border
-      if (cur_x > linestart + getLineInfo(buffer, cursorlinenum).length) {
-        cur_x = linestart + getLineInfo(buffer, cursorlinenum).length;
+      if (command_mode) {
+        if (cur_x > linestart + check_line.length) {
+          cur_x = linestart + check_line.length - 1;
+        } else if (check_line.length == 1) {
+          cur_x = linestart;
+        }
+        if (cur_x < linestart) {
+          cur_x = linestart;
+        }
+
+      } else {
+        if (cur_x > linestart + check_line.length) {
+          cur_x = linestart + check_line.length;
+        }
       }
 
-      // handle scrolling (arrow keys only for now)
-
+      //////////////////// sdajklfklsdjflksdajflkjslkdafj fix the cursor up down bullshittttt
       move(cur_y, cur_x);
 
       refresh();
+      // forgot what this even does ngl
       buf_y = 0;
       buf_x = 0;
 
@@ -279,161 +349,277 @@ namespace Functions {
       // input
       ch = getch();
 
-      switch (ch) {
-      // application functions
-      case ctrl('q'): {
-        if (saved == true) {
-        thing:
-          // clean up
-          endwin();
-          running = false;
-        } else {
-          clear();
-          printw("Quit without saving? y/n ");
-          switch (getch()) {
-          case 'y': {
+      // command mode
+      if (command_mode) {
+        switch (ch) {
+        //// application/file functions
+        case ctrl('q'): {
+          if (saved == true) {
+          thing:
+            // clean up
             endwin();
             running = false;
-            break;
+          } else {
+            clear();
+            printw("Quit without saving? y/n ");
+            switch (getch()) {
+            case 'y': {
+              endwin();
+              running = false;
+              break;
+            }
+            case 'n': {
+              break;
+            }
+            default: {
+              goto thing;
+            }
+            }
           }
-          case 'n': {
-            break;
-          }
-          default: {
-            goto thing;
-          }
-          }
-        }
-        break;
-      }
-      case ctrl('s'): {
-        // save
-        saveFile(buffer, file.path);
-        saved = true; // this will work only once the way i have it lol
-
-        break;
-      }
-
-      // navigation (arrow keys etc.)
-      case KEY_UP: {
-        // all this code is pretty messy
-        if (cursorlinenum == 1) {
           break;
         }
-        // scroll up
-        if (cur_y > LINES / 2 || topmostlinenum == 1) {
+        case ctrl('s'): {
+          // save
+          saved = true;
+          saveFile(buffer, file.path);
+
+          break;
+        }
+
+        //// vim stuff
+
+        // enable input mode
+        case 'i': {
+          command_mode = false;
+          break;
+        }
+        case 'I': {
+          command_mode = false;
+          cur_x        = linestart;
+          break;
+        }
+        case 'a': {
+          command_mode = false;
+          if (cur_x > linestart + currentline.length)
+            break;
+
+          ++cur_x;
+          break;
+        }
+        case 'A': {
+          command_mode = false;
+          if (cur_x > linestart + currentline.length) {
+            break;
+          }
+          cur_x = linestart + currentline.length;
+          break;
+        }
+
+        // center line
+        case 'z': {
+        }
+
+        // movement keys
+        case 'h': {
+          if (cur_x == linestart)
+            break;
+          --cur_x;
+          break;
+        }
+        case 'j': {
+          if (cursorlinenum == linesum)
+            break;
+
+          if (cursorlinenum + 1 > LINES /*/ 2*/ && bottommostlinenum != linesum) {
+            ++topmostlinenum;
+            ++bottommostlinenum;
+            ++cursorlinenum;
+            break;
+          }
+          ++cursorlinenum;
+          ++cur_y;
+          break;
+        }
+        case 'k': {
+          if (cursorlinenum == 1)
+            break;
+
+          // scroll up
+          // middle of the screen scroll
+          // if (cur_y > LINES / 2 || topmostlinenum == 1) {
+          //  --cursorlinenum;
+          //  --cur_y;
+          //  break;
+          //}
+          if (cur_y == 0 && cursorlinenum /*> LINES / 2*/) {
+            --topmostlinenum;
+            --bottommostlinenum;
+            --cursorlinenum;
+            break;
+          }
           --cursorlinenum;
           --cur_y;
           break;
         }
-        if (cur_y == 0 || cursorlinenum > LINES / 2) {
-          --topmostlinenum;
-          --bottommostlinenum;
-          --cursorlinenum;
+        case 'l': {
+          if (cur_x > linestart + currentline.length - 2)
+            break;
+          ++cur_x;
           break;
         }
-        --cursorlinenum;
-        --cur_y;
-        break;
-      }
-      case KEY_DOWN: {
-        if (cursorlinenum == linesum) {
-          break;
         }
-        // scroll down
-        if (cursorlinenum + 1 > LINES / 2 && bottommostlinenum != linesum) {
-          ++topmostlinenum;
-          ++bottommostlinenum;
-          ++cursorlinenum;
-          break;
-        }
-        ++cursorlinenum;
-        ++cur_y;
-        break;
-      }
-      case KEY_RIGHT: {
-        ++cur_x;
-        break;
-      }
-      case KEY_LEFT: {
-        // idk if i really need two checks for this but whatever
-        if (cur_x < linestart) {
-          cur_x = linestart;
-          break;
-        }
-        --cur_x;
-        break;
-      }
-      case '\n': {
-        // testing
-
-        insert(buffer, textcurpos, '\n');
-        ++cursorlinenum;
-        cur_x = linestart;
-
-        if (topmostlinenum != 1) {
-          ++topmostlinenum;
-          break;
-        }
-
-        ++cur_y;
-
-        // insert(buffer, textcurpos, ' ');
-        break;
-        // insert(buffer, 5, '\n');
-      }
-      case KEY_BACKSPACE: {
-        // do nothing on 0,0
-        if (cursorlinenum == 1 && cur_x == linestart) {
-          break;
-        }
-
-        // regular char
-        if (cur_x != linestart) {
-          remove(buffer, textcurpos - 1);
+      } else { // not command mode (crazy)
+        switch (ch) {
+          // exit input mode
+        case 27: { // i guess you can't use '0x1b' for escape, it has to be 27
+          command_mode = true;
+          if (cur_x == linestart)
+            break;
           --cur_x;
           break;
         }
 
-        // backspacing on newline
-        else if (cur_x == linestart) {
-          // get length of line above it
-          lineInfo above{ getLineInfo(buffer, cursorlinenum - 1) };
-          remove(buffer, textcurpos - 1);
+        // navigation (arrow keys etc.)
+        case KEY_UP: {
+          // all this code is pretty messy
+          if (cursorlinenum == 1)
+            break;
 
-          --cursorlinenum;
-          cur_x = linestart + above.length;
-
-          if (topmostlinenum != 1) {
+          // scroll up
+          // middle of the screen scroll
+          // if (cur_y > LINES / 2 || topmostlinenum == 1) {
+          //  --cursorlinenum;
+          //  --cur_y;
+          //  break;
+          //}
+          if (cur_y == 0 && cursorlinenum /*> LINES / 2*/) {
             --topmostlinenum;
-            //--bottommostlinenum;
+            --bottommostlinenum;
+            --cursorlinenum;
             break;
           }
+          --cursorlinenum;
           --cur_y;
-
           break;
         }
+        case KEY_DOWN: {
+          if (cursorlinenum == linesum)
+            break;
 
-        // regular char removal
-        break;
-      }
+          // scroll down
 
-      // standard input
-      default: {
-        // for (int i{}; i < forbiddenchars.length(); ++i) {
-        //  if (ch == forbiddenchars[i]) {
-        //    break;
-        //  }
-        //}
-        insert(buffer, textcurpos, ch);
-        ++cur_x;
-        break;
-      }
+          if (cursorlinenum + 1 > LINES /*/ 2*/ && bottommostlinenum != linesum) {
+            ++topmostlinenum;
+            ++bottommostlinenum;
+            ++cursorlinenum;
+            break;
+          }
+          ++cursorlinenum;
+          ++cur_y;
+          break;
+        }
+        case KEY_RIGHT: {
+          if (cur_x > linestart + line.length)
+            break;
+
+          ++cur_x;
+          break;
+        }
+        case KEY_LEFT: {
+          // idk if i really need two checks for this but whatever
+          if (cur_x < linestart) {
+            cur_x = linestart;
+            break;
+          }
+          --cur_x;
+          break;
+        }
+          // mouse testing
+
+        case '\n': {
+          // testing
+
+          saved = false;
+          insert(buffer, textcurpos, '\n');
+          ++cursorlinenum;
+          cur_x = linestart;
+
+          if (topmostlinenum != 1) {
+            ++topmostlinenum;
+            break;
+          }
+
+          ++cur_y;
+
+          // insert(buffer, textcurpos, ' ');
+          break;
+          // insert(buffer, 5, '\n');
+        }
+        case KEY_BACKSPACE: {
+          // do nothing on 0,0
+          if (cursorlinenum == 1 && cur_x == linestart)
+            break;
+
+          saved = false;
+
+          // regular char
+          if (cur_x != linestart) {
+            remove(buffer, textcurpos - 1);
+            --cur_x;
+            break;
+          }
+
+          // backspacing on newline
+          else if (cur_x == linestart) {
+            // get length of line above it
+            lineInfo above{ getLineInfo(buffer, cursorlinenum - 1) };
+            remove(buffer, textcurpos - 1);
+
+            --cursorlinenum;
+            cur_x = linestart + above.length;
+
+            if (topmostlinenum != 1) {
+              --topmostlinenum;
+              //--bottommostlinenum;
+              break;
+            }
+            --cur_y;
+
+            break;
+          }
+
+          // regular char removal
+          break;
+        }
+        case '0x7F': {
+          if (textcurpos == line.length && cursorlinenum == linesum)
+            break;
+
+          if (cur_x != linestart) {
+            remove(buffer, textcurpos + 1);
+            --cur_x;
+            break;
+          }
+        }
+
+        // standard input
+        default: {
+          // for (int i{}; i < forbiddenchars.length(); ++i) {
+          //  if (ch == forbiddenchars[i]) {
+          //    break;
+          //  }
+          //}
+
+          saved = false;
+          insert(buffer, textcurpos, ch);
+          ++cur_x;
+          break;
+        }
+        }
       }
     }
   }
 
-#if 1
   void writeDummyLines(string path, int linenum) {
     // thing to write dummy lines
     ofstream sfile(path, fstream::out | fstream::trunc);
@@ -442,11 +628,9 @@ namespace Functions {
     }
     sfile.close();
   }
-#endif
 
 #if 0
   void readFile(const string path) {
-    using namespace GapBuffer;
     // get file info and create gap buffer
     fileInfo file{ getFileInfo(path) };
     // const string path{ file.path };
@@ -497,7 +681,6 @@ namespace Functions {
 
 #if 0
   void mainLoopftxui() {
-    using namespace GapBuffer;
     using namespace ftxui;
 
     // get file info
