@@ -1,10 +1,11 @@
 #include "functions.h"
+#include <ncurses.h>
 
 // TODO:
 // fix line number log10 check on first 9 lines (some dumb shit i forgot probably)
 // handle creating new files, and invalid filenames
 // add mouse scrolling (maybe not, this looks awful on ncurse)
-// better error handling (can't open files under 1 char, line number broken, etc.)
+// fix extra newline saving sometimes at the end of the file
 
 // model of what should happen when opening a file
 // 1. create screen to fit terminal size
@@ -60,36 +61,45 @@ namespace Functions {
     int currentlinenum{ 1 };
     int offset{};
 
-    for (int i{}; currentlinenum < lineNum + 1; ++i) {
-      // add to string if line is proper, when next line found, stop
-      if (buffer[i] != '\n' && currentlinenum == lineNum) {
-        linestr += buffer[i];
-      } else if (buffer[i] == '\n') { // if nl, increment line number
-        ++currentlinenum;
+    if (buffer.size() > 1) {
+      for (int i{}; currentlinenum <= lineNum; ++i) {
+        // add to string if line is proper, when next line found, stop
+        if (buffer[i] != '\n' && currentlinenum == lineNum) {
+          linestr += buffer[i];
+        } else if (buffer[i] == '\n') { // if nl, increment line number
+          ++currentlinenum;
+        }
+
+        // separate this
+        if (buffer[i] == '\n' && currentlinenum == lineNum) {
+          // line number matches up,
+          offset = i + 1;
+        }
       }
 
-      // separate this
-      if (buffer[i] == '\n' && currentlinenum == lineNum) {
-        // line number matches up,
-        offset = i + 1;
-      }
+      // works
+      int length = linestr.length();
+
+      lineInfo line{
+        linestr,
+        lineNum,
+        offset,
+        length,
+      };
+      return line;
+    } else {
+      lineInfo line{
+        "",
+        1,
+        0,
+        0,
+      };
+      return line;
     }
-
-    // works
-    int length = linestr.length();
-
-    lineInfo line{
-      linestr,
-      lineNum,
-      offset,
-      length,
-    };
-    return line;
   }
 
   // using vectors really sucks but i gotta get something tangible here
   vector<char> createFileBuffer(fileInfo file) {
-    // fileInfo file{ getFileInfo(path) };
     // cout << "Path: " << path;
     ifstream sfile(file.path);
 
@@ -114,8 +124,14 @@ namespace Functions {
         sfile.close();
       }
     } else {
-      buffer.push_back(' ');
-      sfile.close();
+      if (file.lineSum > 1) {
+        for (int i{}; i < file.lineSum; ++i) {
+          buffer.push_back('\n');
+        }
+        sfile.close();
+      } else {
+        buffer.push_back('\n');
+      }
     }
     // test to see if buffer was created successfully
     // cout << buffer[3] << '\n';
@@ -209,14 +225,13 @@ namespace Functions {
 
     // spaces (calculate this every time backspace or enter is pressed)
     int maxspacenum{};
-    int currentspacenum{};
     string spacestr{};
 
     // line number
     int linenum{ 0 };
     int linesum{ 0 };
     int topmostlinenum{ 1 };
-    int bottommostlinenum{ LINES };
+    int bottommostlinenum{};
     int bufferlineoffset{};
 
     int buf_x{};
@@ -248,21 +263,22 @@ namespace Functions {
     while (running) {
       clear();
 
-      // calculate spaces, line number, then print buffer
-      currentspacenum = 0;
-      maxspacenum     = 0;
-      linestart       = 0;
-      linesum         = 0;
+      // calculate line sum, spaces, line number, then print buffer
+      maxspacenum = 0;
+      linestart   = 0;
+      // line sum
+      linesum = 0;
       for (int i{}; i < buffer.size(); ++i) {
-        if (buffer[i] == '\n') {
+        if (buffer[i] == '\n' || buffer.size() == 1) {
           ++linesum;
-          if (log10(linesum) == static_cast<int>(log10(linesum))) {
-            ++maxspacenum;
-          }
+          // if (log10(linesum) == static_cast<int>(log10(linesum))) {
+          //  ++maxspacenum;
+          //}
         }
       }
       maxspacenum = static_cast<int>(log10(linesum));
-      linestart   = maxspacenum + 2;
+      // + 2 is for the space between line number and text
+      linestart = maxspacenum + 2;
 
       // spacenum = log10(linesum) / 10;
 
@@ -272,12 +288,15 @@ namespace Functions {
 
       linenum           = topmostlinenum;
       bottommostlinenum = topmostlinenum + LINES - 1;
-      lineInfo line{ getLineInfo(buffer, topmostlinenum) };
+      lineInfo line{ getLineInfo(buffer, topmostlinenum) }; // problem
+
+      // reset buffer printing
+      buf_y = 0;
+      buf_x = 0;
 
       for (int i{ line.offset }; i < buffer.size(); ++i) {
         // if not newline
         if (buffer[i] != '\n') {
-          // i lack knowledge! anyways, get your printf format specifiers straight or it's just like yeahhhh print the whole vector instantly (???????) somehow
           mvprintw(buf_y, linestart + buf_x, "%c", buffer[i]);
           // usleep(10000);
           // refresh();
@@ -285,25 +304,17 @@ namespace Functions {
           ++buf_x;
         } else if (buffer[i] == '\n') {
           // spaces
-          for (int i{}; i < maxspacenum; ++i) {
-            mvprintw(buf_y, i, " ");
-          }
+          mvprintw(buf_y, -static_cast<int>(log10(linenum)) + static_cast<int>(log10(linesum)), "%d", linenum);
+
           // line number
           init_pair(1, 8, COLOR_BLACK);
           attron(8);
-          // this gets offset when topmostline is another power of 10
-          for (int i{}; i < maxspacenum; ++i) {
-            mvprintw(buf_y, currentspacenum + 1, "%d", linenum);
-          }
+          // this gets offset when topmostline is a power of 10
           attroff(COLOR_PAIR(8));
 
           buf_x = 0;
           ++buf_y; // in place of a \n, it keeps things smoother i think
           ++linenum;
-          // this may fuck up when printing from a direct power of ten, but i'm not sure yet
-          if (log10(linenum) == static_cast<int>(log10(linenum))) {
-            --currentspacenum;
-          }
         }
       }
 
@@ -311,8 +322,10 @@ namespace Functions {
       lineInfo check_line{ getLineInfo(buffer, cursorlinenum) };
       // top border
       if (cursorlinenum < 1 && cur_y < 0) {
-        ++cursorlinenum;
-        ++cur_y;
+        //++cursorlinenum;
+        //++cur_y;
+        cursorlinenum = 1;
+        cur_y         = 0;
       }
       // line number border
       if (cur_x < linestart) {
@@ -336,15 +349,14 @@ namespace Functions {
       }
 
       //////////////////// sdajklfklsdjflksdajflkjslkdafj fix the cursor up down bullshittttt
-      move(cur_y, cur_x);
-
-      refresh();
-      // forgot what this even does ngl
-      buf_y = 0;
-      buf_x = 0;
 
       lineInfo currentline{ getLineInfo(buffer, cursorlinenum) };
       int textcurpos = currentline.offset + (cur_x - linestart);
+
+      mvprintw(cur_y, 100, "linesum: %d, currentline: %d, cursorlinenum: %d, log10 linesum: %d, buffer size: %d", linesum, currentline.linenum, cursorlinenum, static_cast<int>(log10(linesum)), static_cast<int>(buffer.size()));
+
+      move(cur_y, cur_x);
+      refresh();
 
       // input
       ch = getch();
@@ -492,7 +504,7 @@ namespace Functions {
           //  --cur_y;
           //  break;
           //}
-          if (cur_y == 0 && cursorlinenum /*> LINES / 2*/) {
+          if (cur_y == 0 /*&& cursorlinenum > LINES / 2*/) {
             --topmostlinenum;
             --bottommostlinenum;
             --cursorlinenum;
@@ -519,7 +531,7 @@ namespace Functions {
           break;
         }
         case KEY_RIGHT: {
-          if (cur_x > linestart + line.length)
+          if (cur_x > linestart + currentline.length)
             break;
 
           ++cur_x;
