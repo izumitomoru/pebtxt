@@ -614,6 +614,11 @@ namespace Functions {
 
             --cursorlinenum;
 
+            if (topmostlinenum == 1) {
+              --cur_y;
+              break;
+            }
+
             // if you don't want the ability to scroll past final line
             if (bottommostlinenum == linesum) {
               --topmostlinenum;
