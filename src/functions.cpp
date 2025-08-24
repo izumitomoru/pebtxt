@@ -1,5 +1,4 @@
 #include "functions.h"
-#include <ncurses.h>
 
 // TODO:
 // add mouse scrolling (maybe not, this looks awful on ncurse)
@@ -10,6 +9,7 @@
 // add auto indent and auto scope close
 // add ctrl+d and ctrl+u scrolling
 // add cursor x position memory
+// add ask for filename when saved if no filename previously provided
 
 namespace Functions {
 
@@ -145,12 +145,6 @@ namespace Functions {
     buffer.erase(buffer.begin() + pos);
   }
 
-  void printBuffer(vector<char>& buffer) {
-    for (int i{}; i < buffer.size(); ++i) {
-      cout << buffer[i];
-    }
-  }
-
   void saveFile(vector<char>& buffer, string path) {
     fstream outputfile(path, fstream::in | fstream::out | fstream::trunc);
     for (int i{}; i < buffer.size(); ++i) {
@@ -167,8 +161,6 @@ namespace Functions {
   }
 
   void mainLoop(string path) {
-    using namespace ftxui;
-
     // get file info
     fileInfo file(getFileInfo(path));
     // fileInfo file(getFileInfo("burger.txt"));
@@ -678,140 +670,4 @@ namespace Functions {
     }
     sfile.close();
   }
-
-// deprecated
-#if 0
-  void readFile(const string path) {
-    // get file info and create gap buffer
-    fileInfo file{ getFileInfo(path) };
-    // const string path{ file.path };
-    cout << "Path: " << file.path << '\n';
-    vector<char> buffer{ createFileBuffer(file.path) };
-
-    // get spaces
-    int spacenum = file.lineLog10;
-    string spacestr{};
-    for (int i{ 0 }; i < spacenum; ++i) {
-      // idk which one of these is the most efficient
-      spacestr += ' ';
-      // spacestr = spacestr + ' ';
-      // spacestr.append(" ");
-    }
-
-    // horrific system i will change when the first line onscreen isn't the first
-    int linenum{ 1 };
-    // print for first line specifically
-    cout << spacestr << linenum << ' ';
-
-    // print buffer contents
-    for (int i{}; i < buffer.size(); ++i) {
-      // if not newline, print character
-      if (buffer[i] != '\n') {
-        cout << buffer[i];
-      } else {
-        // print newline
-        cout << buffer[i];
-
-        // increment line number
-        ++linenum;
-
-        // check if line number is a power of 10
-        if (log10(linenum) == static_cast<int>(log10(linenum))) {
-          // cout << "is int\n";
-          // decrement spacenum BEFORE resizing, this took 20 - 30 minutes to figure out, my brain's so fried
-          --spacenum;
-          spacestr.resize(spacenum);
-        }
-
-        // print line
-        cout << spacestr << linenum << ' ';
-      }
-    }
-  }
-#endif
-
-#if 0
-  void mainLoopftxui() {
-    using namespace ftxui;
-
-    // get file info
-    fileInfo file(getFileInfo(getPath()));
-
-    // create file buffer
-    vector<char> buffer{ createFileBuffer(file.path) };
-
-    // create screen fitting the terminal
-    auto screen = Screen::Create(Dimension::Full());
-    // screen.
-    // ScreenInteractive screen = ScreenInteractive::TerminalOutput();
-
-    // loop variables
-
-    // line count, cursor position, screen dimensions, vertical half point
-    int currentline{ 1 };
-    int cursorpos_x{};
-    int cursorpos_y{};
-    int screenDimY{ screen.dimy() };
-    int screenDimX{ screen.dimx() };
-    int screenVerticalHalfpoint{ screenDimY / 2 };
-
-    // calculate topmost line
-    int highestVisibleLine{ (screenVerticalHalfpoint - screenVerticalHalfpoint) + 1 };
-
-    // screen elements
-    Element bufferDisplay{};
-    Element winBorder = window(text("window title"), frame(text("test")));
-
-    bool running{ true };
-
-    [[maybe_unused]] int i{ 0 };
-    // while (running != false) {
-    for (i; i < 500; ++i) {
-      // screen.Active();
-      // Render(screen, winBorder);
-      screen.ResetPosition(true);
-      Render(screen, text(to_string(i)));
-      screen.Print();
-      // screen.Clear();
-    }
-
-    // screen size of 10, cursor is at y pos 6,
-
-    // idk
-    Element thing = paragraph("");
-
-    // Element testframe = frame(thing);
-    // Element winBorder = window(text(""), testframe);
-    Element testtext = text("test thing");
-
-    // Render(screen, winBorder);
-    // screen.Print();
-
-    // screen.ResetPosition(true);
-
-    // print screen
-    // Render(screen, thing);
-    // Render(screen, contents);
-  }
-#endif
-
-  // probably not even needed
-  // void openExistingFile(string path) {
-  //  // just wrote over my whole functions.cpp file lol thank god for undo
-  //  // changing this shit to burger.txt ONLY
-  //  // writeDummyLines("./files/burger.txt", 105);
-
-  //  fileInfo file{ getFileInfo(path) };
-  //  cout << "Path is " << file.path << '\n';
-  //  cout << "Cache path is " << file.cachepath << '\n';
-
-  //  readFile(file.path);
-
-  //  // file >> line;
-
-  //  // assuming you need a loop for all lines, i'll experiment with that
-
-  //  // writing to file goes here i guess
-  //}
-
 } // namespace Functions

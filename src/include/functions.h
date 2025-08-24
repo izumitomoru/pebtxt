@@ -5,23 +5,11 @@
 // okay so i was gonna use ftxui but frankly i have no idea how to make it work so FUCK IT!!!! c++ ncurses
 
 #include <algorithm>
-#include <charconv>
 #include <cmath>
-#include <cstring>
-#include <ctime>
 #include <fstream>
-#include <ftxui/component/component.hpp>
-#include <ftxui/component/loop.hpp>
-#include <ftxui/component/screen_interactive.hpp>
-#include <ftxui/dom/elements.hpp>
-#include <ftxui/screen/screen.hpp>
 #include <iostream>
-#include <memory>
 #include <ncurses.h>
-#include <stdio.h>
-#include <streambuf>
 #include <string>
-#include <unistd.h>
 #include <vector>
 
 // cool snippet i stole from stack overflow
