@@ -3,10 +3,12 @@
 
 // TODO:
 // fix line number log10 check on first 9 lines (some dumb shit i forgot probably)
-// handle creating new files, and invalid filenames
 // add mouse scrolling (maybe not, this looks awful on ncurse)
 // fix extra newline saving sometimes at the end of the file
 // possibly implement scrolling past final line, not difficult i imagine but likely needlessly time consuming
+// add more command mode features
+// add use with the command line, type the program name in then filename (if it's not too difficult)
+// fix any character exiting on asking to save
 
 // model of what should happen when opening a file
 // 1. create screen to fit terminal size
@@ -352,7 +354,8 @@ namespace Functions {
       lineInfo currentline{ getLineInfo(buffer, cursorlinenum) };
       int textcurpos = currentline.offset + (cur_x - linestart);
 
-      mvprintw(cur_y, 100, "linesum: %d, currentline: %d, cursorlinenum: %d, log10 linesum: %d, buffer size: %d, bottommostlinenum: %d, topmostlinenum: %d", linesum, currentline.linenum, cursorlinenum, static_cast<int>(log10(linesum)), static_cast<int>(buffer.size()), bottommostlinenum, topmostlinenum);
+      //// PRINT INFO PRINT ////
+      mvprintw(LINES / 2, 100, "linesum: %d, currentline: %d, cursorlinenum: %d, log10 linesum: %d, buffer size: %d, bottommostlinenum: %d, topmostlinenum: %d", linesum, currentline.linenum, cursorlinenum, static_cast<int>(log10(linesum)), static_cast<int>(buffer.size()), bottommostlinenum, topmostlinenum);
 
       move(cur_y, cur_x);
       refresh();
@@ -426,6 +429,32 @@ namespace Functions {
           break;
         }
 
+        // create newline and move cursor to it
+        case 'o': {
+          saved        = false;
+          command_mode = false;
+          insert(buffer, currentline.offset + currentline.length, '\n');
+
+          if (cursorlinenum == bottommostlinenum) {
+            ++cursorlinenum;
+            ++topmostlinenum;
+            break;
+          }
+          ++cursorlinenum;
+          if (cursorlinenum == linesum)
+            break;
+          ++cur_y;
+          break;
+        }
+        // same thing but above (inefficient i knowt)
+        case 'O': {
+          saved        = false;
+          command_mode = false;
+
+          insert(buffer, currentline.offset, '\n');
+          break;
+        }
+
         // center line
         case 'z': {
         }
@@ -438,7 +467,7 @@ namespace Functions {
           break;
         }
         case 'j': {
-          if (cursorlinenum == linesum && bottommostlinenum == linesum)
+          if (cursorlinenum == linesum && bottommostlinenum == linesum || cursorlinenum == linesum)
             break;
 
           if (cur_y + 1 == LINES) {
@@ -613,15 +642,35 @@ namespace Functions {
           // regular char removal
           break;
         }
-        case '0x7F': {
-          if (textcurpos == line.length && cursorlinenum == linesum)
+        // delete
+        case KEY_DC: { // can't be 0x7f, must be 127
+          saved = false;
+
+          if (cur_x == linestart + currentline.length && cursorlinenum == linesum)
             break;
 
-          if (cur_x != linestart) {
-            remove(buffer, textcurpos + 1);
-            --cur_x;
+          remove(buffer, textcurpos);
+
+          if (cur_x != linestart + currentline.length)
             break;
+
+          if (topmostlinenum != 1 && bottommostlinenum == linesum) {
+            --topmostlinenum;
+            ++cur_y;
           }
+
+          // if (topmostlinenum > 1 && bottommostlinenum != linesum) {
+          //  //++topmostlinenum;
+          //  ++cursorlinenum;
+          //  break;
+          //}
+          // if (topmostlinenum > 1 && bottommostlinenum == linesum) {
+          //  --topmostlinenum;
+          //  //++cursorlinenum;
+          //  break;
+          //}
+
+          break;
         }
 
         // standard input
