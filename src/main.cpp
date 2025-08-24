@@ -100,11 +100,17 @@ void testinputs() {
   }
 }
 
-int main() {
+int main(int argc, char* argv[]) {
   using namespace Functions;
   // getinput();
   // writeDummyLines("./files/burger.txt", 125);
-  mainLoop();
+  string path{};
+  if (argc == 1) {
+    path = getPath();
+  } else {
+    path = argv[1];
+  }
+  mainLoop(path);
   // testinputs();
   return 0;
 }

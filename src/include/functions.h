@@ -57,11 +57,13 @@ namespace Functions {
   void insert(vector<char>& buffer, int pos, char ch);
   void remove(vector<char>& buffer, int pos);
 
+  string getPath();
+
   void readFile(const string);
   void readftxui(const string);
   void writeDummyLines(string, int);
   void openExistingFile(string);
-  void mainLoop();
+  void mainLoop(string path);
   string getLine(const string path, int lineNum);
 } // namespace Functions
 #endif

@@ -6,8 +6,11 @@
 // fix extra newline sometimes saving at the end of the file
 // possibly implement scrolling past final line, not difficult i imagine but likely needlessly time consuming
 // add more command mode features
-// add use with the command line, type the program name in then filename (if it's not too difficult)
 // fix any character exiting on asking to save
+// add auto indent
+// add ctrl+d and ctrl+u scrolling
+// add cursor x position memory
+// make arrowkeys the same as vim controls
 
 namespace Functions {
 
@@ -162,11 +165,11 @@ namespace Functions {
     return path;
   }
 
-  void mainLoop() {
+  void mainLoop(string path) {
     using namespace ftxui;
 
     // get file info
-    fileInfo file(getFileInfo(getPath()));
+    fileInfo file(getFileInfo(path));
     // fileInfo file(getFileInfo("burger.txt"));
 
     // create file buffer
@@ -347,10 +350,10 @@ namespace Functions {
       move(cur_y, cur_x);
       refresh();
 
-      // input
+      //// input
       ch = getch();
 
-      // command mode
+      /// command mode
       if (command_mode) {
         switch (ch) {
         //// application/file functions
@@ -454,7 +457,7 @@ namespace Functions {
           break;
         }
         case 'j': {
-          if (cursorlinenum == linesum && bottommostlinenum == linesum || cursorlinenum == linesum)
+          if (cursorlinenum == linesum)
             break;
 
           if (cur_y + 1 == LINES) {
@@ -470,7 +473,7 @@ namespace Functions {
           if (cursorlinenum == 1)
             break;
 
-          if (cur_y == 0 && cursorlinenum /*> LINES / 2*/) {
+          if (cur_y == 0) {
             --topmostlinenum;
             --bottommostlinenum;
             --cursorlinenum;
@@ -487,7 +490,10 @@ namespace Functions {
           break;
         }
         }
-      } else { // not command mode (crazy)
+      }
+
+      /// input mode
+      else {
         switch (ch) {
           // exit input mode
         case 27: { // i guess you can't use '0x1b' for escape, it has to be 27
@@ -518,14 +524,12 @@ namespace Functions {
           if (cursorlinenum == linesum)
             break;
 
-          // scroll down
-
-          if (cursorlinenum + 1 > LINES && bottommostlinenum != linesum) {
+          if (cur_y + 1 == LINES) {
             ++topmostlinenum;
-            ++bottommostlinenum;
             ++cursorlinenum;
             break;
           }
+
           ++cursorlinenum;
           ++cur_y;
           break;
@@ -533,14 +537,12 @@ namespace Functions {
         case KEY_RIGHT: {
           if (cur_x > linestart + currentline.length)
             break;
-
           ++cur_x;
           break;
         }
         case KEY_LEFT: {
           // idk if i really need two checks for this but whatever
-          if (cur_x < linestart) {
-            cur_x = linestart;
+          if (cur_x == linestart) {
             break;
           }
           --cur_x;
