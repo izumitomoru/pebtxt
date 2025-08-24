@@ -1,4 +1,9 @@
 build
-build*
+*.fuse
+*build
 build
 cache
+./build/
+./cache/
+./compile_flags.txt
+./vscode/
