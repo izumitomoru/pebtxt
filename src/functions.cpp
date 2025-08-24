@@ -2,23 +2,12 @@
 #include <ncurses.h>
 
 // TODO:
-// fix line number log10 check on first 9 lines (some dumb shit i forgot probably)
 // add mouse scrolling (maybe not, this looks awful on ncurse)
-// fix extra newline saving sometimes at the end of the file
+// fix extra newline sometimes saving at the end of the file
 // possibly implement scrolling past final line, not difficult i imagine but likely needlessly time consuming
 // add more command mode features
 // add use with the command line, type the program name in then filename (if it's not too difficult)
 // fix any character exiting on asking to save
-
-// model of what should happen when opening a file
-// 1. create screen to fit terminal size
-// 2. get path input and create file buffer
-// 3. loop to print buffer on and wait for user inputs (scroll, hit key or backspace)
-// 4. on save, overwrite file contents with buffer contents
-
-// scrolling model (for now) gonna make it just when you reach the bottom screen part
-// 1. track line number, when line number exceeds screen lines, downshift everything
-//
 
 namespace Functions {
 
@@ -325,8 +314,6 @@ namespace Functions {
       lineInfo check_line{ getLineInfo(buffer, cursorlinenum) };
       // top border
       if (cursorlinenum < 1 && cur_y < 0) {
-        //++cursorlinenum;
-        //++cur_y;
         cursorlinenum = 1;
         cur_y         = 0;
       }
@@ -336,7 +323,7 @@ namespace Functions {
       }
       // line end border
       if (command_mode) {
-        if (cur_x > linestart + check_line.length) {
+        if (cur_x > linestart + check_line.length - 1) {
           cur_x = linestart + check_line.length - 1;
         } else if (check_line.length == 1) {
           cur_x = linestart;
@@ -658,17 +645,6 @@ namespace Functions {
             --topmostlinenum;
             ++cur_y;
           }
-
-          // if (topmostlinenum > 1 && bottommostlinenum != linesum) {
-          //  //++topmostlinenum;
-          //  ++cursorlinenum;
-          //  break;
-          //}
-          // if (topmostlinenum > 1 && bottommostlinenum == linesum) {
-          //  --topmostlinenum;
-          //  //++cursorlinenum;
-          //  break;
-          //}
 
           break;
         }
