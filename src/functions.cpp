@@ -6,6 +6,7 @@
 // handle creating new files, and invalid filenames
 // add mouse scrolling (maybe not, this looks awful on ncurse)
 // fix extra newline saving sometimes at the end of the file
+// possibly implement scrolling past final line, not difficult i imagine but likely needlessly time consuming
 
 // model of what should happen when opening a file
 // 1. create screen to fit terminal size
@@ -348,12 +349,10 @@ namespace Functions {
         }
       }
 
-      //////////////////// sdajklfklsdjflksdajflkjslkdafj fix the cursor up down bullshittttt
-
       lineInfo currentline{ getLineInfo(buffer, cursorlinenum) };
       int textcurpos = currentline.offset + (cur_x - linestart);
 
-      mvprintw(cur_y, 100, "linesum: %d, currentline: %d, cursorlinenum: %d, log10 linesum: %d, buffer size: %d", linesum, currentline.linenum, cursorlinenum, static_cast<int>(log10(linesum)), static_cast<int>(buffer.size()));
+      mvprintw(cur_y, 100, "linesum: %d, currentline: %d, cursorlinenum: %d, log10 linesum: %d, buffer size: %d, bottommostlinenum: %d, topmostlinenum: %d", linesum, currentline.linenum, cursorlinenum, static_cast<int>(log10(linesum)), static_cast<int>(buffer.size()), bottommostlinenum, topmostlinenum);
 
       move(cur_y, cur_x);
       refresh();
@@ -439,12 +438,18 @@ namespace Functions {
           break;
         }
         case 'j': {
-          if (cursorlinenum == linesum)
+          if (cursorlinenum == linesum && bottommostlinenum == linesum)
             break;
 
-          if (cursorlinenum + 1 > LINES /*/ 2*/ && bottommostlinenum != linesum) {
+          // if (cursorlinenum + 1 == LINES) {
+          //  ++topmostlinenum;
+          //  ++cursorlinenum;
+          //  break;
+          //}
+
+          // if (cursorlinenum + 1 > LINES /*/ 2*/ && bottommostlinenum != linesum) {
+          if (cur_y + 1 == LINES) {
             ++topmostlinenum;
-            ++bottommostlinenum;
             ++cursorlinenum;
             break;
           }
@@ -553,13 +558,25 @@ namespace Functions {
 
           saved = false;
           insert(buffer, textcurpos, '\n');
-          ++cursorlinenum;
-          cur_x = linestart;
-
-          if (topmostlinenum != 1) {
+          if (bottommostlinenum == cursorlinenum) {
+            ++cursorlinenum;
             ++topmostlinenum;
             break;
           }
+          ++cursorlinenum;
+          cur_x = linestart;
+          // had some stuff here for scroll on enter but i won't keep it probably
+
+          // if (bottommostlinenum == cursorlinenum || topmostlinenum == 1) {
+          //   ++topmostlinenum;
+          //   break;
+          // }
+
+          // if (topmostlinenum > 1) {
+          //   ++topmostlinenum;
+          //   ++bottommostlinenum;
+          //   break;
+          // }
 
           ++cur_y;
 
@@ -581,20 +598,36 @@ namespace Functions {
             break;
           }
 
-          // backspacing on newline
+          // backspacing on blankline
           else if (cur_x == linestart) {
             // get length of line above it
             lineInfo above{ getLineInfo(buffer, cursorlinenum - 1) };
             remove(buffer, textcurpos - 1);
 
-            --cursorlinenum;
-            cur_x = linestart + above.length;
-
-            if (topmostlinenum != 1) {
+            if (cursorlinenum == topmostlinenum && topmostlinenum != 1) {
               --topmostlinenum;
-              //--bottommostlinenum;
+              --cursorlinenum;
               break;
             }
+
+            cur_x = linestart + above.length;
+
+            --cursorlinenum;
+
+            // if you don't want the ability to scroll past final line
+            if (bottommostlinenum == linesum) {
+              --topmostlinenum;
+              break;
+            }
+
+            // if (cursorlinenum==topmostlinenum&&top)
+
+            // if (topmostlinenum != 1) {
+            //  --topmostlinenum;
+            //  //--bottommostlinenum;
+            //  break;
+            //}
+
             --cur_y;
 
             break;
