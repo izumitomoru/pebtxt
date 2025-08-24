@@ -7,24 +7,25 @@
 // possibly implement scrolling past final line, not difficult i imagine but likely needlessly time consuming
 // add more command mode features
 // fix any character exiting on asking to save
-// add auto indent
+// add auto indent and auto scope close
 // add ctrl+d and ctrl+u scrolling
 // add cursor x position memory
-// make arrowkeys the same as vim controls
 
 namespace Functions {
 
   // default path for files
-  const string defaultpath{ "./files/" };
-  const string defaultcachepath{ "./cache/" };
+  // const string defaultpath{ "./files/" };
+  // const string defaultcachepath{ "./cache/" };
+
+  const string defaultpath{ "./" };
 
   // making very inefficient copies at the moment, but it's workable
   fileInfo getFileInfo(string path) {
     // slightly flawed, but whatever
     string cachepath{};
     if (path[0] != '/' && path[0] != '~' && path[0] != '.') {
-      cachepath = defaultcachepath + path;
-      path      = defaultpath + path;
+      // cachepath = defaultcachepath + path;
+      path = defaultpath + path;
     } else if (path[0] == '/' || path[0] == '~' || path[0] == '.') {
     }
 
@@ -345,7 +346,7 @@ namespace Functions {
       int textcurpos = currentline.offset + (cur_x - linestart);
 
       //// PRINT INFO PRINT ////
-      mvprintw(LINES / 2, 100, "linesum: %d, currentline: %d, cursorlinenum: %d, log10 linesum: %d, buffer size: %d, bottommostlinenum: %d, topmostlinenum: %d", linesum, currentline.linenum, cursorlinenum, static_cast<int>(log10(linesum)), static_cast<int>(buffer.size()), bottommostlinenum, topmostlinenum);
+      // mvprintw(LINES / 2, 100, "linesum: %d, currentline: %d, cursorlinenum: %d, log10 linesum: %d, buffer size: %d, bottommostlinenum: %d, topmostlinenum: %d", linesum, currentline.linenum, cursorlinenum, static_cast<int>(log10(linesum)), static_cast<int>(buffer.size()), bottommostlinenum, topmostlinenum);
 
       move(cur_y, cur_x);
       refresh();

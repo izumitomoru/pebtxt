@@ -1,10 +1,7 @@
 #ifndef FUNCTIONS_H
 #define FUNCTIONS_H
 
-// #include "cli/cli.h"
-// doesn't work i guess
-// #include "cpp-terminal/terminal.hpp" // will be trying to use this if ftxui sucks (unlikely)
-
+// #include "cpp-terminal/terminal.hpp" // another option
 // okay so i was gonna use ftxui but frankly i have no idea how to make it work so FUCK IT!!!! c++ ncurses
 
 #include <algorithm>
