@@ -75,17 +75,17 @@ namespace Functions {
       }
 
       // works
-      int truelength = linestr.length();
-      int length{ truelength - 1 };
+      int lengthtrue = linestr.length();
+      int length{ lengthtrue - 1 };
 
       int lineend     = linestart + length;
-      int lineendtrue = linestart + truelength;
+      int lineendtrue = linestart + lengthtrue;
 
       lineInfo line{
         lineNum,
         offset,
         length,
-        truelength,
+        lengthtrue,
         linestart,
         lineend,
         lineendtrue,
@@ -328,31 +328,28 @@ namespace Functions {
         cur_y         = 0;
       }
       // line number border
-      if (cur_x < linestart) {
-        cur_x = linestart;
-      }
-      // line end border
-      // if (cmdmode) {
-      //   if (cur_x > linestart + check_line.length - 1) {
-      //     cur_x = linestart + check_line.length - 1;
-      //   } else if (check_line.length == 1) {
-      //     cur_x = linestart;
-      //   }
-      //   if (cur_x < linestart) {
-      //     cur_x = linestart;
-      //   }
-
-      // } else {
-      //   if (cur_x > linestart + check_line.length) {
-      //     cur_x = linestart + check_line.length;
-      //   }
+      // if (cur_x < linestart) {
+      //   cur_x = linestart;
       // }
 
+      // checking before every refresh is probably better but it does annoy me
+      if (cmdmode) {
+        if (cur_x > check_line.lineend)
+          cur_x = check_line.lineend;
+      } else {
+        if (cur_x > check_line.lineendtrue)
+          cur_x = check_line.lineendtrue;
+      }
+      if (cur_x < linestart)
+        cur_x = linestart;
+
       // i really overcomplicated this for practically no gain, and this is likely even slower than it was. but i LOVE IT!!!!!!! also i'm like really fucking out of it and this shit looks awesome
+      // nah but i'm probably gonna undo like an hour and a half of work cuz i'm neurotic
+
       lineInfo currentline = getLineInfo(buffer, cursorlinenum, linestart);
-      lineInfo aboveLine   = getLineInfo(buffer, cursorlinenum - 1, linestart);
-      lineInfo belowLine   = getLineInfo(buffer, cursorlinenum + 1, linestart);
-      // textcurpos           = currentline.offset + (cur_x - linestart);
+      // lineInfo aboveLine   = getLineInfo(buffer, cursorlinenum - 1, linestart);
+      // lineInfo belowLine   = getLineInfo(buffer, cursorlinenum + 1, linestart);
+      textcurpos  = currentline.offset + (cur_x - linestart);
       lineend     = currentline.lineend;
       lineendtrue = currentline.lineendtrue;
       // if (currentline.length != 0) {
@@ -370,6 +367,7 @@ namespace Functions {
       bool atlinestart     = (cur_x == linestart);
       bool atlineend       = (cur_x >= lineend);
       bool atlineendtrue   = (cur_x >= lineendtrue);
+      bool screenfull      = (bottomlinenum >= LINES);
 
       //// PRINT INFO PRINT ////
       mvprintw(LINES / 2, 100, "linesum: %d, currentline: %d, cursorlinenum: %d, log10 linesum: %d, buffer size: %d, bottomlinenum: %d, toplinenum: %d", linesum, currentline.linenum, cursorlinenum, static_cast<int>(log10(linesum)), static_cast<int>(buffer.size()), bottomlinenum, toplinenum);
@@ -450,15 +448,17 @@ namespace Functions {
         case 'o': {
           saved   = false;
           cmdmode = false;
-          insert(buffer, currentline.offset + lineendtrue, '\n');
+          insert(buffer, currentline.offset + currentline.lengthtrue, '\n');
 
-          if (atbottomline) {
+          cur_x = linestart;
+
+          if (atbottomline && screenfull) {
             ++cursorlinenum;
             ++toplinenum;
             break;
           }
           ++cursorlinenum;
-          if (atlastline)
+          if (atbottomline && screenfull)
             break;
           ++cur_y;
           break;
@@ -469,6 +469,7 @@ namespace Functions {
           cmdmode = false;
 
           insert(buffer, currentline.offset, '\n');
+          cur_x = linestart;
           break;
         }
 
@@ -501,6 +502,9 @@ namespace Functions {
             ++cursorlinenum;
             break;
           }
+          //  if (cur_x > belowLine.length)
+          //    cur_x = belowLine.length;
+
           ++cursorlinenum;
           ++cur_y;
           break;
@@ -517,10 +521,13 @@ namespace Functions {
 
           if (cur_y == 0) {
             --toplinenum;
-            //--bottomlinenum;
             --cursorlinenum;
             break;
           }
+
+          //  if (cur_x > aboveLine.length)
+          //    cur_x = aboveLine.length;
+
           --cursorlinenum;
           --cur_y;
           break;
@@ -559,6 +566,10 @@ namespace Functions {
             --cursorlinenum;
             break;
           }
+
+          // if (cur_x > aboveLine.lengthtrue)
+          //   cur_x = aboveLine.lengthtrue;
+
           --cursorlinenum;
           --cur_y;
           break;
@@ -572,6 +583,9 @@ namespace Functions {
             ++cursorlinenum;
             break;
           }
+
+          // if (cur_x > belowLine.lengthtrue)
+          //   cur_x = belowLine.lengthtrue;
 
           ++cursorlinenum;
           ++cur_y;
@@ -645,7 +659,7 @@ namespace Functions {
             lineInfo above{ getLineInfo(buffer, cursorlinenum - 1, linestart) };
             remove(buffer, textcurpos - 1);
 
-            cur_x = linestart + above.length;
+            cur_x = linestart + above.lengthtrue;
 
             if (attopline && !toplinefirst) {
               --toplinenum;
@@ -678,12 +692,12 @@ namespace Functions {
         case KEY_DC: { // can't be 0x7f, must be 127
           saved = false;
 
-          if (cur_x == lineend && atlastline)
+          if (atlineend && atlastline)
             break;
 
           remove(buffer, textcurpos);
 
-          if (cur_x != lineend)
+          if (!atlineend)
             break;
 
           if (!toplinefirst && bottomlineissum) {

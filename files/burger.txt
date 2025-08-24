@@ -1,11 +1,18 @@
 burger!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
 isdafsda
 
+
+
+
 burger boblasdffine 1iii
-line 2
+
+lin
+e 2
+
+
+
 lsine 3burger
+
 line 4 testing input mode!
 
 ti
@@ -15,7 +22,7 @@ it works!line 5
 k
 burgermeep
 
-
+this poor file keeps getting mangled beyond relief
 
 li
 
@@ -23,9 +30,11 @@ ne sadfsdlfsad
 
  7
 line 8
-line 9
-line 10
+line 9line 10
+
 line 11
+
+
 line 12 test
 line 13
 sdklajfhksjladflksdajfl;ksja;lfkjsd
@@ -41,12 +50,16 @@ line 37
 line 38
 line 39
 line 40
+
 line 41
+
 line 42
 line 43
+
 line 44
 line 45
 line 46
+
 line 47
 line 48j
 burge rbob
@@ -63,6 +76,7 @@ line 55
 line 56line 57
 line 58
 line 59
+
 line 60
 line 61
 line 62
@@ -131,5 +145,8 @@ line FUCK YOU!!!!!!! GRAHH!!!!!!!!!
 
 
 lskjhdfhksdahfkjsdhfhskdjlfhsdalkjkjlkasdjflksdjflsdkfjlsafk
+
+
+
 
 

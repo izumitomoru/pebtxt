@@ -31,7 +31,7 @@ namespace Functions {
     int linenum{};
     int offset{};
     int length{};
-    int truelength{};
+    int lengthtrue{};
     int linestart{};
     int lineend{};
     int lineendtrue{};
