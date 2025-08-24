@@ -8,8 +8,7 @@ lsine 3burger
 line 4 testing input mode!
 ti
 a
-it works!
-line 5
+it works!line 5
 
 k
 burgermeep
@@ -18,9 +17,8 @@ burgermeep
 
 li
 
-ne 6
+ne sadfsdlfsad
 
-line
  7
 line 8
 line 9
@@ -65,9 +63,7 @@ line 52
 line 55
 
 
-
-line 56
-line 57
+line 56line 57
 line 58
 line 59
 line 60

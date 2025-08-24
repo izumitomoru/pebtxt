@@ -441,13 +441,6 @@ namespace Functions {
           if (cursorlinenum == linesum && bottommostlinenum == linesum)
             break;
 
-          // if (cursorlinenum + 1 == LINES) {
-          //  ++topmostlinenum;
-          //  ++cursorlinenum;
-          //  break;
-          //}
-
-          // if (cursorlinenum + 1 > LINES /*/ 2*/ && bottommostlinenum != linesum) {
           if (cur_y + 1 == LINES) {
             ++topmostlinenum;
             ++cursorlinenum;
@@ -461,13 +454,6 @@ namespace Functions {
           if (cursorlinenum == 1)
             break;
 
-          // scroll up
-          // middle of the screen scroll
-          // if (cur_y > LINES / 2 || topmostlinenum == 1) {
-          //  --cursorlinenum;
-          //  --cur_y;
-          //  break;
-          //}
           if (cur_y == 0 && cursorlinenum /*> LINES / 2*/) {
             --topmostlinenum;
             --bottommostlinenum;
@@ -502,14 +488,7 @@ namespace Functions {
           if (cursorlinenum == 1)
             break;
 
-          // scroll up
-          // middle of the screen scroll
-          // if (cur_y > LINES / 2 || topmostlinenum == 1) {
-          //  --cursorlinenum;
-          //  --cur_y;
-          //  break;
-          //}
-          if (cur_y == 0 /*&& cursorlinenum > LINES / 2*/) {
+          if (cur_y == 0) {
             --topmostlinenum;
             --bottommostlinenum;
             --cursorlinenum;
@@ -525,7 +504,7 @@ namespace Functions {
 
           // scroll down
 
-          if (cursorlinenum + 1 > LINES /*/ 2*/ && bottommostlinenum != linesum) {
+          if (cursorlinenum + 1 > LINES && bottommostlinenum != linesum) {
             ++topmostlinenum;
             ++bottommostlinenum;
             ++cursorlinenum;
@@ -565,6 +544,7 @@ namespace Functions {
           }
           ++cursorlinenum;
           cur_x = linestart;
+
           // had some stuff here for scroll on enter but i won't keep it probably
 
           // if (bottommostlinenum == cursorlinenum || topmostlinenum == 1) {
@@ -604,13 +584,13 @@ namespace Functions {
             lineInfo above{ getLineInfo(buffer, cursorlinenum - 1) };
             remove(buffer, textcurpos - 1);
 
+            cur_x = linestart + above.length;
+
             if (cursorlinenum == topmostlinenum && topmostlinenum != 1) {
               --topmostlinenum;
               --cursorlinenum;
               break;
             }
-
-            cur_x = linestart + above.length;
 
             --cursorlinenum;
 
@@ -624,14 +604,6 @@ namespace Functions {
               --topmostlinenum;
               break;
             }
-
-            // if (cursorlinenum==topmostlinenum&&top)
-
-            // if (topmostlinenum != 1) {
-            //  --topmostlinenum;
-            //  //--bottommostlinenum;
-            //  break;
-            //}
 
             --cur_y;
 
@@ -679,6 +651,7 @@ namespace Functions {
     sfile.close();
   }
 
+// deprecated
 #if 0
   void readFile(const string path) {
     // get file info and create gap buffer
