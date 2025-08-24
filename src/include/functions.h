@@ -28,14 +28,30 @@ namespace Functions {
   };
 
   struct lineInfo {
-    string str{};
     int linenum{};
     int offset{};
     int length{};
+    int truelength{};
+    int linestart{};
+    int lineend{};
+    int lineendtrue{};
+    string str{};
+  };
+
+  struct bufferInfo {
+    vector<char>& buffer;
+    lineInfo& currentline;
+    int& topline;
+    int& bottomline;
+    int& cur_y;
+    int& cur_x;
+    // int& cursorlinenum;
+    // int& linestart;
+    bool& command_mode;
   };
 
   fileInfo getFileInfo(const string);
-  lineInfo getLineInfo(vector<char>&, int);
+  lineInfo getLineInfo(vector<char>&, int, int);
 
   vector<char> createFileBuffer(fileInfo);
   void printBuffer(vector<char>& buffer);
