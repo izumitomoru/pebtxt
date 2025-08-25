@@ -7,14 +7,8 @@
 // possibly implement scrolling past final line, not difficult i imagine but likely needlessly time consuming
 // add more command mode features
 // add auto indent and auto scope close
-// add ctrl+d and ctrl+u scrolling
 // add cursor x position memory
 // add ask for filename when saved if no filename previously provided
-
-// TODO:
-// scroll model
-// 1. get destination, coordinates, current line length, all that good stuff
-// 2. perform all proper checks
 
 namespace Functions {
 
@@ -235,6 +229,10 @@ namespace Functions {
     int lineend{};
     int lineendtrue{};
 
+    int midpoint{};
+    int height{};
+    int difference{};
+
     // cursor
     int textcurpos{};
 
@@ -245,6 +243,9 @@ namespace Functions {
 
     move(0, 0);
     getyx(stdscr, cur_y, cur_x);
+
+    // scrolling
+    int scrollamount{ 12 };
 
     int buf_x{};
     int buf_y{};
@@ -327,10 +328,6 @@ namespace Functions {
         cursorlinenum = 1;
         cur_y         = 0;
       }
-      // line number border
-      // if (cur_x < linestart) {
-      //   cur_x = linestart;
-      // }
 
       // checking before every refresh is probably better but it does annoy me
       if (cmdmode) {
@@ -358,19 +355,26 @@ namespace Functions {
       //  lineend = linestart + currentline.length;
 
       // line check booleans
-      bool toplinefirst    = (toplinenum == 1);
-      bool attopline       = (cursorlinenum == toplinenum);
-      bool atbottomline    = (cursorlinenum == bottomlinenum);
-      bool atfirstline     = (cursorlinenum == 1);
-      bool atlastline      = (cursorlinenum == linesum);
-      bool bottomlineissum = (bottomlinenum == linesum);
-      bool atlinestart     = (cur_x == linestart);
-      bool atlineend       = (cur_x >= lineend);
-      bool atlineendtrue   = (cur_x >= lineendtrue);
-      bool screenfull      = (bottomlinenum >= LINES);
+      bool firstlinevisible = (toplinenum == 1);
+      bool attopline        = (cursorlinenum == toplinenum);
+      bool atbottomline     = (cursorlinenum == bottomlinenum);
+      bool atfirstline      = (cursorlinenum == 1);
+      bool atlastline       = (cursorlinenum == linesum);
+      bool lastlinevisible  = (bottomlinenum == linesum);
+      bool atlinestart      = (cur_x == linestart);
+      bool atlineend        = (cur_x >= lineend);
+      bool atlineendtrue    = (cur_x >= lineendtrue);
+      bool screenfull       = (bottomlinenum >= LINES);
+      bool y0               = (cur_y == 0);
+      bool yfull            = (cur_y + 1 == LINES);
+
+      // midpoint = (bottomlinenum > toplinenum) / 2;
+      midpoint   = (LINES) / 2;
+      difference = abs(midpoint - cur_y);
 
       //// PRINT INFO PRINT ////
       mvprintw(LINES / 2, 100, "linesum: %d, currentline: %d, cursorlinenum: %d, log10 linesum: %d, buffer size: %d, bottomlinenum: %d, toplinenum: %d", linesum, currentline.linenum, cursorlinenum, static_cast<int>(log10(linesum)), static_cast<int>(buffer.size()), bottomlinenum, toplinenum);
+      mvprintw(LINES / 2 + 1, 100, "cur_y: %d, cur_x: %d", cur_y, cur_x);
 
       move(cur_y, cur_x);
       refresh();
@@ -475,6 +479,21 @@ namespace Functions {
 
         // center line
         case 'z': {
+          //          if (firstlinevisible || !screenfull || atlastline)
+          //            break;
+
+          if (difference >= 0) {
+            toplinenum    = difference;
+            cursorlinenum = difference;
+            cur_y         = midpoint;
+          } // else if (difference < 0) {
+          //  toplinenum -= difference;
+          //  cursorlinenum -= difference;
+          //  cur_y = midpoint;
+          //} else {
+          //}
+
+          break;
         }
 
         /// navigation keys
@@ -486,6 +505,60 @@ namespace Functions {
           cur_x = lineend;
           break;
         }
+
+        case ctrl('u'): {
+          if (cursorlinenum - scrollamount < 1) {
+            cur_y         = 0;
+            toplinenum    = 1;
+            cursorlinenum = 1;
+            break;
+          }
+
+          lineInfo scrollline = getLineInfo(buffer, cursorlinenum - scrollamount, linestart);
+
+          if (cursorlinenum - scrollamount >= toplinenum) {
+            cursorlinenum -= scrollamount;
+            cur_y -= scrollamount;
+          }
+
+          else if (cursorlinenum - scrollamount < toplinenum) {
+            toplinenum += scrollline.linenum - toplinenum;
+            cursorlinenum -= scrollamount; // keep
+            cur_y = 0;
+          }
+
+          if (cur_x > scrollline.lineend)
+            cur_x = scrollline.lineend;
+          break;
+        }
+
+        case ctrl('d'): {
+          if (cursorlinenum + scrollamount > linesum) {
+            cur_y = LINES - 1;
+            toplinenum += linesum - bottomlinenum;
+            cursorlinenum = linesum;
+            break;
+          }
+
+          lineInfo scrollline = getLineInfo(buffer, cursorlinenum + scrollamount, linestart);
+
+          if (cursorlinenum + scrollamount <= bottomlinenum) {
+            cursorlinenum += scrollamount;
+            cur_y += scrollamount;
+          }
+
+          else if (cursorlinenum + scrollamount > bottomlinenum) {
+            toplinenum += scrollline.linenum - bottomlinenum;
+            cursorlinenum += scrollamount;
+            cur_y = LINES - 1;
+          }
+
+          if (cur_x > scrollline.lineend)
+            cur_x = scrollline.lineend;
+
+          break;
+        }
+
         case 'h': {
           if (atlinestart)
             break;
@@ -493,17 +566,14 @@ namespace Functions {
           break;
         }
         case 'j': {
-          // if (cursorlinenum == linesum)
           if (atlastline)
             break;
 
-          if (cur_y + 1 == LINES) {
+          if (yfull) {
             ++toplinenum;
             ++cursorlinenum;
             break;
           }
-          //  if (cur_x > belowLine.length)
-          //    cur_x = belowLine.length;
 
           ++cursorlinenum;
           ++cur_y;
@@ -513,20 +583,11 @@ namespace Functions {
           if (atfirstline)
             break;
 
-          //--cursorlinenum;
-          // if (cur_y == 0) {
-          //  scrollUp(toplinenum, cursorlinenum);
-          //  break;
-          //}
-
-          if (cur_y == 0) {
+          if (y0) {
             --toplinenum;
             --cursorlinenum;
             break;
           }
-
-          //  if (cur_x > aboveLine.length)
-          //    cur_x = aboveLine.length;
 
           --cursorlinenum;
           --cur_y;
@@ -556,7 +617,6 @@ namespace Functions {
 
         // navigation (arrow keys etc.)
         case KEY_UP: {
-          // all this code is pretty messy
           if (atfirstline)
             break;
 
@@ -566,9 +626,6 @@ namespace Functions {
             --cursorlinenum;
             break;
           }
-
-          // if (cur_x > aboveLine.lengthtrue)
-          //   cur_x = aboveLine.lengthtrue;
 
           --cursorlinenum;
           --cur_y;
@@ -584,9 +641,6 @@ namespace Functions {
             break;
           }
 
-          // if (cur_x > belowLine.lengthtrue)
-          //   cur_x = belowLine.lengthtrue;
-
           ++cursorlinenum;
           ++cur_y;
           break;
@@ -598,14 +652,12 @@ namespace Functions {
           break;
         }
         case KEY_LEFT: {
-          // idk if i really need two checks for this but whatever
           if (atlinestart) {
             break;
           }
           --cur_x;
           break;
         }
-          // mouse testing
 
         case '\n': {
           // testing
@@ -620,24 +672,9 @@ namespace Functions {
           ++cursorlinenum;
           cur_x = linestart;
 
-          // had some stuff here for scroll on enter but i won't keep it probably
-
-          // if (bottomlinenum == cursorlinenum || toplinefirst) {
-          //   ++toplinenum;
-          //   break;
-          // }
-
-          // if (toplinenum > 1) {
-          //   ++toplinenum;
-          //   ++bottomlinenum;
-          //   break;
-          // }
-
           ++cur_y;
 
-          // insert(buffer, textcurpos, ' ');
           break;
-          // insert(buffer, 5, '\n');
         }
         case KEY_BACKSPACE: {
           // do nothing on 0,0
@@ -661,7 +698,7 @@ namespace Functions {
 
             cur_x = linestart + above.lengthtrue;
 
-            if (attopline && !toplinefirst) {
+            if (attopline && !firstlinevisible) {
               --toplinenum;
               --cursorlinenum;
               break;
@@ -669,13 +706,13 @@ namespace Functions {
 
             --cursorlinenum;
 
-            if (toplinefirst) {
+            if (firstlinevisible) {
               --cur_y;
               break;
             }
 
             // if you don't want the ability to scroll past final line
-            if (bottomlineissum) {
+            if (lastlinevisible) {
               --toplinenum;
               break;
             }
@@ -700,7 +737,7 @@ namespace Functions {
           if (!atlineend)
             break;
 
-          if (!toplinefirst && bottomlineissum) {
+          if (!firstlinevisible && lastlinevisible) {
             --toplinenum;
             ++cur_y;
           }
