@@ -7,7 +7,6 @@
 // possibly implement scrolling past final line, not difficult i imagine but likely needlessly time consuming
 // add more command mode features
 // add auto indent and auto scope close
-// add cursor x position memory
 // add ask for filename when saved if no filename previously provided
 
 namespace Functions {
@@ -239,13 +238,15 @@ namespace Functions {
     int cur_x{};
     int cur_y{};
 
+    int cur_x_mem{};
+
     int cursorlinenum{ 1 };
 
     move(0, 0);
     getyx(stdscr, cur_y, cur_x);
 
     // scrolling
-    int scrollamount{ 12 };
+    int scrolldist{ 7 };
 
     int buf_x{};
     int buf_y{};
@@ -328,6 +329,8 @@ namespace Functions {
         cursorlinenum = 1;
         cur_y         = 0;
       }
+
+      cur_x = cur_x_mem;
 
       // checking before every refresh is probably better but it does annoy me
       if (cmdmode) {
@@ -427,8 +430,9 @@ namespace Functions {
           break;
         }
         case 'I': {
-          cmdmode = false;
-          cur_x   = linestart;
+          cmdmode   = false;
+          cur_x     = linestart;
+          cur_x_mem = cur_x;
           break;
         }
         case 'a': {
@@ -437,6 +441,7 @@ namespace Functions {
             break;
 
           ++cur_x;
+          cur_x_mem = cur_x;
           break;
         }
         case 'A': {
@@ -444,7 +449,8 @@ namespace Functions {
           if (atlineend) {
             break;
           }
-          cur_x = lineendtrue;
+          cur_x     = lineendtrue;
+          cur_x_mem = cur_x;
           break;
         }
 
@@ -505,53 +511,62 @@ namespace Functions {
           cur_x = lineend;
           break;
         }
+        case 'G': {
+        }
 
         case ctrl('u'): {
-          if (cursorlinenum - scrollamount < 1) {
+          if (cursorlinenum - scrolldist < 1) {
             cur_y         = 0;
             toplinenum    = 1;
             cursorlinenum = 1;
+            cur_x         = cur_x_mem;
             break;
           }
 
-          lineInfo scrollline = getLineInfo(buffer, cursorlinenum - scrollamount, linestart);
+          lineInfo scrollline = getLineInfo(buffer, cursorlinenum - scrolldist, linestart);
 
-          if (cursorlinenum - scrollamount >= toplinenum) {
-            cursorlinenum -= scrollamount;
-            cur_y -= scrollamount;
+          if (cursorlinenum - scrolldist >= toplinenum) {
+            cursorlinenum -= scrolldist;
+            cur_y -= scrolldist;
           }
 
-          else if (cursorlinenum - scrollamount < toplinenum) {
+          else if (cursorlinenum - scrolldist < toplinenum) {
             toplinenum += scrollline.linenum - toplinenum;
-            cursorlinenum -= scrollamount; // keep
+            cursorlinenum -= scrolldist; // keep
             cur_y = 0;
           }
 
+          // cur_x = cur_x_mem;
+
           if (cur_x > scrollline.lineend)
             cur_x = scrollline.lineend;
+
           break;
         }
 
         case ctrl('d'): {
-          if (cursorlinenum + scrollamount > linesum) {
+          if (cursorlinenum + scrolldist > linesum) {
             cur_y = LINES - 1;
             toplinenum += linesum - bottomlinenum;
             cursorlinenum = linesum;
+            cur_x         = cur_x_mem;
             break;
           }
 
-          lineInfo scrollline = getLineInfo(buffer, cursorlinenum + scrollamount, linestart);
+          lineInfo scrollline = getLineInfo(buffer, cursorlinenum + scrolldist, linestart);
 
-          if (cursorlinenum + scrollamount <= bottomlinenum) {
-            cursorlinenum += scrollamount;
-            cur_y += scrollamount;
+          if (cursorlinenum + scrolldist <= bottomlinenum) {
+            cursorlinenum += scrolldist;
+            cur_y += scrolldist;
           }
 
-          else if (cursorlinenum + scrollamount > bottomlinenum) {
+          else if (cursorlinenum + scrolldist > bottomlinenum) {
             toplinenum += scrollline.linenum - bottomlinenum;
-            cursorlinenum += scrollamount;
+            cursorlinenum += scrolldist;
             cur_y = LINES - 1;
           }
+
+          // cur_x = cur_x_mem;
 
           if (cur_x > scrollline.lineend)
             cur_x = scrollline.lineend;
@@ -563,11 +578,14 @@ namespace Functions {
           if (atlinestart)
             break;
           --cur_x;
+          cur_x_mem = cur_x;
           break;
         }
         case 'j': {
           if (atlastline)
             break;
+
+          // cur_x = cur_x_mem;
 
           if (yfull) {
             ++toplinenum;
@@ -582,6 +600,8 @@ namespace Functions {
         case 'k': {
           if (atfirstline)
             break;
+
+          // cur_x = cur_x_mem;
 
           if (y0) {
             --toplinenum;
@@ -598,6 +618,7 @@ namespace Functions {
           if (atlineend)
             break;
           ++cur_x;
+          cur_x_mem = cur_x;
           break;
         }
         }
@@ -612,6 +633,7 @@ namespace Functions {
           if (atlinestart)
             break;
           --cur_x;
+          cur_x_mem = cur_x;
           break;
         }
 
@@ -620,7 +642,9 @@ namespace Functions {
           if (atfirstline)
             break;
 
-          if (cur_y == 0) {
+          // cur_x = cur_x_mem;
+
+          if (y0) {
             --toplinenum;
             --bottomlinenum;
             --cursorlinenum;
@@ -635,7 +659,9 @@ namespace Functions {
           if (atlastline)
             break;
 
-          if (cur_y + 1 == LINES) {
+          // cur_x = cur_x_mem;
+
+          if (yfull) {
             ++toplinenum;
             ++cursorlinenum;
             break;
@@ -649,6 +675,7 @@ namespace Functions {
           if (atlineendtrue)
             break;
           ++cur_x;
+          cur_x_mem = cur_x;
           break;
         }
         case KEY_LEFT: {
@@ -656,6 +683,7 @@ namespace Functions {
             break;
           }
           --cur_x;
+          cur_x_mem = cur_x;
           break;
         }
 
@@ -687,6 +715,7 @@ namespace Functions {
           if (!atlinestart) {
             remove(buffer, textcurpos - 1);
             --cur_x;
+            cur_x_mem = cur_x;
             break;
           }
 
@@ -696,7 +725,8 @@ namespace Functions {
             lineInfo above{ getLineInfo(buffer, cursorlinenum - 1, linestart) };
             remove(buffer, textcurpos - 1);
 
-            cur_x = linestart + above.lengthtrue;
+            cur_x     = linestart + above.lengthtrue;
+            cur_x_mem = cur_x;
 
             if (attopline && !firstlinevisible) {
               --toplinenum;
@@ -756,6 +786,7 @@ namespace Functions {
           saved = false;
           insert(buffer, textcurpos, ch);
           ++cur_x;
+          cur_x_mem = cur_x;
           break;
         }
         }

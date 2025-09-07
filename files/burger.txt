@@ -2,6 +2,13 @@ burger!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 isdafsda
 
+t
+ t
+   t
+      t
+   t
+ t
+t
 
 
 
@@ -9,6 +16,8 @@ burger boblasdffine 1iii
 
 
 lin
+io
+burger bob
 
 e 2
 
@@ -49,7 +58,7 @@ line 33
 line 34
 line 35
 line 36
-line 37
+line 37 burger
 line 38
 line 39
 line 40
@@ -148,5 +157,3 @@ line FUCK YOU!!!!!!! GRAHH!!!!!!!!!
 
 
 lskjhdfhksdahfkjsdhfhskdjlfhsdalkjkjlkasdjflksdjflsdkfjlsafk
-
-
