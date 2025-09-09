@@ -2,12 +2,18 @@
 
 // TODO:
 /// REFORM CODEBASE!!!
+// consolidate stuff into reusable functions to reduce redundancy
 // add mouse scrolling (maybe not, this looks awful on ncurses)
 // fix extra newline sometimes saving at the end of the file
 // possibly implement scrolling past final line, not difficult i imagine but likely needlessly time consuming
 // add more command mode features
 // add auto indent and auto scope close
 // add ask for filename when saved if no filename previously provided
+
+// consolidation models
+//
+// scroll
+//
 
 namespace Functions {
 
@@ -177,6 +183,81 @@ namespace Functions {
     } else {
       return;
     }
+  }
+
+  /// scrolling
+  // i want simple, reusable scroll functions, likely separate for cursor and screen
+
+  // scrolling is a screen only thing, cursor should be managed separately
+
+  // screen
+  void scrollscr(int amount, bufferInfo& bufinfo) {
+    // catch going past first line
+    if (bufinfo.topline + amount <= 1) {
+      bufinfo.topline = 1;
+      return;
+    }
+    // catch going past last line
+    if (bufinfo.bottomline + amount >= bufinfo.linesum) {
+      bufinfo.topline += bufinfo.linesum - bufinfo.bottomline;
+      return;
+    }
+
+    bufinfo.topline += amount;
+  }
+
+  // cursor
+  void scrollcur(int amount, bufferInfo& bufinfo) {
+    // catch going past first line
+    if (bufinfo.cursorlinenum + amount <= 1) {
+      scrollscr(amount, bufinfo);
+      bufinfo.cursorlinenum = 1;
+      bufinfo.cur_y         = 0;
+      return;
+    }
+    // catch going past last line
+    if (bufinfo.cursorlinenum + amount >= bufinfo.linesum) {
+      bufinfo.cursorlinenum = bufinfo.linesum;
+      bufinfo.cur_y         = bufinfo.scrheight - 1;
+      scrollscr(amount, bufinfo);
+      return;
+    }
+
+    // going past top line
+    if (bufinfo.cursorlinenum + amount < bufinfo.topline) {
+      scrollscr((bufinfo.cursorlinenum + amount) - bufinfo.topline, bufinfo);
+      bufinfo.cursorlinenum += amount;
+      bufinfo.cur_y = 0;
+      return;
+    }
+    // going past bottom line
+    else if (bufinfo.cursorlinenum + amount > bufinfo.bottomline) {
+      scrollscr((bufinfo.cursorlinenum + amount) - bufinfo.bottomline, bufinfo);
+      bufinfo.cur_y = bufinfo.scrheight - 1;
+      bufinfo.cursorlinenum += amount;
+      return;
+    }
+    bufinfo.cursorlinenum += amount;
+    bufinfo.cur_y += amount;
+  }
+
+  array<char, 3> open{ '\(', '\[', '\{' };
+  array<char, 3> close{ ')', ']', '}' };
+
+  // autoPair for parentheses, quotes etc.
+  void autoPair(vector<char>& buffer, int& pos, char ch) {
+    char pairch{};
+
+    // switch (ch) {
+    // case open[0]: {
+    //  pairch = ')';
+    //}
+    //}
+    //// if new pair
+    // if (buffer[pos] != ch && buffer[pos - 1] != ch) {
+    //  insert(buffer, pos, ch);
+    //  insert(buffer, pos - 1, pairch);
+    //}
   }
 
   string getPath() {
@@ -371,6 +452,21 @@ namespace Functions {
       bool y0               = (cur_y == 0);
       bool yfull            = (cur_y + 1 == LINES);
 
+      bufferInfo bufinfo{
+        buffer,
+        toplinenum,
+        bottomlinenum,
+        linesum,
+        currentline,
+        linestart,
+        cursorlinenum,
+        cur_y,
+        cur_x,
+        LINES,
+        COLS,
+        cmdmode,
+      };
+
       // midpoint = (bottomlinenum > toplinenum) / 2;
       midpoint   = (LINES) / 2;
       difference = abs(midpoint - cur_y);
@@ -515,62 +611,12 @@ namespace Functions {
         }
 
         case ctrl('u'): {
-          if (cursorlinenum - scrolldist < 1) {
-            cur_y         = 0;
-            toplinenum    = 1;
-            cursorlinenum = 1;
-            cur_x         = cur_x_mem;
-            break;
-          }
-
-          lineInfo scrollline = getLineInfo(buffer, cursorlinenum - scrolldist, linestart);
-
-          if (cursorlinenum - scrolldist >= toplinenum) {
-            cursorlinenum -= scrolldist;
-            cur_y -= scrolldist;
-          }
-
-          else if (cursorlinenum - scrolldist < toplinenum) {
-            toplinenum += scrollline.linenum - toplinenum;
-            cursorlinenum -= scrolldist; // keep
-            cur_y = 0;
-          }
-
-          // cur_x = cur_x_mem;
-
-          if (cur_x > scrollline.lineend)
-            cur_x = scrollline.lineend;
-
+          scrollcur(-scrolldist, bufinfo);
           break;
         }
 
         case ctrl('d'): {
-          if (cursorlinenum + scrolldist > linesum) {
-            cur_y = LINES - 1;
-            toplinenum += linesum - bottomlinenum;
-            cursorlinenum = linesum;
-            cur_x         = cur_x_mem;
-            break;
-          }
-
-          lineInfo scrollline = getLineInfo(buffer, cursorlinenum + scrolldist, linestart);
-
-          if (cursorlinenum + scrolldist <= bottomlinenum) {
-            cursorlinenum += scrolldist;
-            cur_y += scrolldist;
-          }
-
-          else if (cursorlinenum + scrolldist > bottomlinenum) {
-            toplinenum += scrollline.linenum - bottomlinenum;
-            cursorlinenum += scrolldist;
-            cur_y = LINES - 1;
-          }
-
-          // cur_x = cur_x_mem;
-
-          if (cur_x > scrollline.lineend)
-            cur_x = scrollline.lineend;
-
+          scrollcur(scrolldist, bufinfo);
           break;
         }
 
@@ -582,35 +628,11 @@ namespace Functions {
           break;
         }
         case 'j': {
-          if (atlastline)
-            break;
-
-          // cur_x = cur_x_mem;
-
-          if (yfull) {
-            ++toplinenum;
-            ++cursorlinenum;
-            break;
-          }
-
-          ++cursorlinenum;
-          ++cur_y;
+          scrollcur(1, bufinfo);
           break;
         }
         case 'k': {
-          if (atfirstline)
-            break;
-
-          // cur_x = cur_x_mem;
-
-          if (y0) {
-            --toplinenum;
-            --cursorlinenum;
-            break;
-          }
-
-          --cursorlinenum;
-          --cur_y;
+          scrollcur(-1, bufinfo);
           break;
         }
         case 'l': {
@@ -774,6 +796,21 @@ namespace Functions {
 
           break;
         }
+
+        /// autoclose
+        case '\(': {
+          autoPair(buffer, textcurpos, ch);
+
+          break;
+
+          ++cur_x;
+          cur_x_mem = cur_x;
+          break;
+        }
+        // case ')': {
+        //  if ()
+        //    break;
+        //}
 
         // standard input
         default: {

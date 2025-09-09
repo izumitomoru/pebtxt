@@ -7,3 +7,6 @@ cache
 ./cache/
 ./compile_flags.txt
 ./vscode/
+src/functionsold.cpp
+*files
+*vscode

@@ -6,5 +6,10 @@ i suck at coding and haven't done barely any for years so i'm gonna make a bareb
 ### Goals
 - semi customizable layout if at all possible (maybe not actually)
 - i'd love to have some basic coding QOL functions (auto close parentheses, etc.)
-- ultra basic vim mode so i can stop using arrow keys
 - unscalable codebase
+
+### Features
+- text editing!
+- budget vim mode
+- poorly coded scrolling
+- cursor x coordinate memory

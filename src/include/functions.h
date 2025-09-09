@@ -5,6 +5,7 @@
 // okay so i was gonna use ftxui but frankly i have no idea how to make it work so FUCK IT!!!! c++ ncurses
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdlib>
 #include <fstream>
@@ -41,14 +42,17 @@ namespace Functions {
 
   struct bufferInfo {
     vector<char>& buffer;
-    lineInfo& currentline;
     int& topline;
     int& bottomline;
+    int& linesum;
+    lineInfo& currentline;
+    int& linestart;
+    int& cursorlinenum;
     int& cur_y;
     int& cur_x;
-    // int& cursorlinenum;
-    // int& linestart;
-    bool& command_mode;
+    int& scrheight;
+    int& scrwidth;
+    bool& cmdmode;
   };
 
   fileInfo getFileInfo(const string);
