@@ -9,4 +9,7 @@ cache
 ./vscode/
 src/functionsold.cpp
 *files
+*files/
+./files/
+./files
 *vscode
