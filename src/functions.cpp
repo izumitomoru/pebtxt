@@ -10,11 +10,6 @@
 // add auto indent and auto scope close
 // add ask for filename when saved if no filename previously provided
 
-// consolidation models
-//
-// scroll
-//
-
 namespace Functions {
 
   const string defaultpath{ "./" };
@@ -164,27 +159,6 @@ namespace Functions {
     }
   }
 
-  // scroll
-  // you don't need to know the current cursor num to scroll up properly, that will be handled as it happens
-  void scrollUp(int& toplinenum, int& cursorlinenum) {
-    if (toplinenum == 1)
-      return;
-    if (toplinenum != 1 || cursorlinenum != 1) {
-      --toplinenum;
-      --cursorlinenum;
-    } else {
-      return;
-    }
-  }
-
-  void scrollDown(int& bottomlinenum, int& toplinenum, int& linesum) {
-    if (bottomlinenum != linesum && toplinenum > 1) {
-      ++toplinenum;
-    } else {
-      return;
-    }
-  }
-
   /// scrolling
   // i want simple, reusable scroll functions, likely separate for cursor and screen
 
@@ -195,15 +169,16 @@ namespace Functions {
     // catch going past first line
     if (bufinfo.topline + amount <= 1) {
       bufinfo.topline = 1;
-      return;
+      // bufinfo.bottomline = LINES;
     }
     // catch going past last line
-    if (bufinfo.bottomline + amount >= bufinfo.linesum) {
+    else if (bufinfo.bottomline + amount >= bufinfo.linesum) {
       bufinfo.topline += bufinfo.linesum - bufinfo.bottomline;
-      return;
+      // bufinfo.bottomline += bufinfo.linesum - bufinfo.bottomline;
+    } else {
+      bufinfo.topline += amount;
+      // bufinfo.bottomline += amount;
     }
-
-    bufinfo.topline += amount;
   }
 
   // cursor
@@ -468,12 +443,18 @@ namespace Functions {
       };
 
       // midpoint = (bottomlinenum > toplinenum) / 2;
-      midpoint   = (LINES) / 2;
-      difference = abs(midpoint - cur_y);
+      midpoint = (LINES) / 2;
+      // difference = abs(midpoint - cur_y);
+
+      // difference = midpoint - cursorlinenum;
+      // difference = cursorlinenum-midpoint;
+      difference = cursorlinenum + (midpoint - bottomlinenum);
+      // difference = bottomlinenum - (cursorlinenum + midpoint);
 
       //// PRINT INFO PRINT ////
       mvprintw(LINES / 2, 100, "linesum: %d, currentline: %d, cursorlinenum: %d, log10 linesum: %d, buffer size: %d, bottomlinenum: %d, toplinenum: %d", linesum, currentline.linenum, cursorlinenum, static_cast<int>(log10(linesum)), static_cast<int>(buffer.size()), bottomlinenum, toplinenum);
       mvprintw(LINES / 2 + 1, 100, "cur_y: %d, cur_x: %d", cur_y, cur_x);
+      mvprintw(LINES / 2 + 2, 100, "difference: %d", difference);
 
       move(cur_y, cur_x);
       refresh();
@@ -541,10 +522,7 @@ namespace Functions {
           break;
         }
         case 'A': {
-          cmdmode = false;
-          if (atlineend) {
-            break;
-          }
+          cmdmode   = false;
           cur_x     = lineendtrue;
           cur_x_mem = cur_x;
           break;
@@ -569,7 +547,6 @@ namespace Functions {
           ++cur_y;
           break;
         }
-        // same thing but above (inefficient i knowt)
         case 'O': {
           saved   = false;
           cmdmode = false;
@@ -581,30 +558,38 @@ namespace Functions {
 
         // center line
         case 'z': {
-          //          if (firstlinevisible || !screenfull || atlastline)
-          //            break;
+          if (difference == 0)
+            break;
 
-          if (difference >= 0) {
-            toplinenum    = difference;
-            cursorlinenum = difference;
-            cur_y         = midpoint;
-          } // else if (difference < 0) {
-          //  toplinenum -= difference;
-          //  cursorlinenum -= difference;
-          //  cur_y = midpoint;
-          //} else {
-          //}
+          scrollscr(difference, bufinfo);
+
+          // this code isn't the greatest
+          if (!firstlinevisible && !lastlinevisible) {
+            if (toplinenum == 1)
+              cur_y = cursorlinenum - 1;
+            else if (bottomlinenum + difference >= linesum) {
+              cur_y += -(linesum - bottomlinenum);
+            } else
+              cur_y += -difference;
+          }
+          //
+          else if (firstlinevisible && difference > 0)
+            cur_y += -difference;
+          else if (lastlinevisible && difference < 0)
+            cur_y += -difference;
 
           break;
         }
 
         /// navigation keys
         case '0': {
-          cur_x = linestart;
+          cur_x     = linestart;
+          cur_x_mem = cur_x;
           break;
         }
         case '$': {
-          cur_x = lineend;
+          cur_x     = lineend;
+          cur_x_mem = cur_x;
           break;
         }
         case 'G': {
@@ -661,36 +646,11 @@ namespace Functions {
 
         // navigation (arrow keys etc.)
         case KEY_UP: {
-          if (atfirstline)
-            break;
-
-          // cur_x = cur_x_mem;
-
-          if (y0) {
-            --toplinenum;
-            --bottomlinenum;
-            --cursorlinenum;
-            break;
-          }
-
-          --cursorlinenum;
-          --cur_y;
+          scrollcur(-1, bufinfo);
           break;
         }
         case KEY_DOWN: {
-          if (atlastline)
-            break;
-
-          // cur_x = cur_x_mem;
-
-          if (yfull) {
-            ++toplinenum;
-            ++cursorlinenum;
-            break;
-          }
-
-          ++cursorlinenum;
-          ++cur_y;
+          scrollcur(1, bufinfo);
           break;
         }
         case KEY_RIGHT: {
@@ -727,7 +687,6 @@ namespace Functions {
           break;
         }
         case KEY_BACKSPACE: {
-          // do nothing on 0,0
           if (atfirstline && atlinestart)
             break;
 
