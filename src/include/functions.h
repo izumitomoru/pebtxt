@@ -16,6 +16,7 @@
 
 // cool snippet i stole from stack overflow
 #define ctrl(x) ((x) & 0x1f)
+#define esc 27
 
 namespace Functions {
   using namespace std;
