@@ -22,10 +22,8 @@ namespace Functions {
 
   // making very inefficient copies at the moment, but it's workable
   fileInfo getFileInfo(string path) {
-    // slightly flawed, but whatever
     string cachepath{};
     if (path[0] != '/' && path[0] != '~' && path[0] != '.') {
-      // cachepath = defaultcachepath + path;
       path = defaultpath + path;
     } else if (path[0] == '/' || path[0] == '~' || path[0] == '.') {
     }
@@ -108,9 +106,6 @@ namespace Functions {
   }
 
   void insert(vector<char>& buffer, const int pos, const char ch) {
-    // for (int i{}; i < text.length(); ++i, ++pos) {
-    //  buffer.insert(buffer.begin() + pos, text[i]);
-    //}
     buffer.insert(buffer.begin() + pos, ch);
   }
 
@@ -118,9 +113,7 @@ namespace Functions {
     buffer.erase(buffer.begin() + pos);
   }
 
-  // using vectors really sucks but i gotta get something tangible here
   vector<char> createFileBuffer(fileInfo file) {
-    // cout << "Path: " << path;
     ifstream sfile(file.path);
 
     vector<char> buffer{};
@@ -138,8 +131,6 @@ namespace Functions {
             buffer.push_back(line[i]);
           }
           buffer.push_back('\n');
-          // test.push_back(line += '\n');
-          // GapBuffer::createTestBuffer();
         }
         sfile.close();
       }
@@ -153,8 +144,6 @@ namespace Functions {
         buffer.push_back('\n');
       }
     }
-    // test to see if buffer was created successfully
-    // cout << buffer[3] << '\n';
     return buffer;
   }
 
@@ -170,15 +159,12 @@ namespace Functions {
     // catch going past first line
     if (bufinfo.topline + amount <= 1) {
       bufinfo.topline = 1;
-      // bufinfo.bottomline = LINES;
     }
     // catch going past last line
     else if (bufinfo.bottomline + amount >= bufinfo.linesum) {
       bufinfo.topline += bufinfo.linesum - bufinfo.bottomline;
-      // bufinfo.bottomline += bufinfo.linesum - bufinfo.bottomline;
     } else {
       bufinfo.topline += amount;
-      // bufinfo.bottomline += amount;
     }
   }
 
@@ -196,11 +182,8 @@ namespace Functions {
     // catch going past last line
     else if (bufinfo.cursorlinenum + amount > bufinfo.linesum) {
       bufinfo.cursorlinenum = bufinfo.linesum;
-      // if (bufinfo.bottomline!=)
-      //   bufinfo.cur_y         = bufinfo.linesum - 1;
       if (bufinfo.bottomline == bufinfo.linesum && bufinfo.bottomline < bufinfo.scrheight)
         bufinfo.cur_y = bufinfo.bottomline - 1;
-      // bufinfo.cur_y += bufinfo.bottomline - bufinfo.cursorlinenum;
       else
         bufinfo.cur_y = bufinfo.scrheight - 1;
       scrollscr(amount, bufinfo);
@@ -356,9 +339,6 @@ namespace Functions {
       for (int i{}; i < buffer.size(); ++i) {
         if (buffer[i] == '\n' || buffer.size() == 1) {
           ++linesum;
-          // if (log10(linesum) == static_cast<int>(log10(linesum))) {
-          //  ++maxspacenum;
-          //}
         }
       }
       maxspacenum = static_cast<int>(log10(linesum));
@@ -371,6 +351,7 @@ namespace Functions {
 
       linenum = toplinenum;
 
+      // i failed to make a single line that handles both cases, i just don't have the tools for it
       if (toplinenum == 1 && linesum <= LINES)
         bottomlinenum = linesum;
       else
@@ -413,7 +394,6 @@ namespace Functions {
 
       cur_x = cur_x_mem;
 
-      // checking before every refresh is probably better but it does annoy me
       if (cmdmode) {
         if (cur_x > check_line.lineend)
           cur_x = check_line.lineend;
@@ -440,16 +420,20 @@ namespace Functions {
       bool atlineend        = (cur_x >= lineend);
       bool atlineendtrue    = (cur_x >= lineendtrue);
       bool screenfull       = (bottomlinenum >= LINES);
-      bool y0               = (cur_y == 0);
-      bool yfull            = (cur_y + 1 == LINES);
 
       midpoint   = (LINES) / 2;
       difference = cursorlinenum + (midpoint - bottomlinenum);
 
       //// PRINT INFO PRINT ////
-      mvprintw(LINES / 2, 100, "linesum: %d, currentline: %d, cursorlinenum: %d, log10 linesum: %d, buffer size: %d, bottomlinenum: %d, toplinenum: %d", linesum, currentline.linenum, cursorlinenum, static_cast<int>(log10(linesum)), static_cast<int>(buffer.size()), bottomlinenum, toplinenum);
-      mvprintw(LINES / 2 + 1, 100, "cur_y: %d, cur_x: %d", cur_y, cur_x);
-      mvprintw(LINES / 2 + 2, 100, "difference: %d", difference);
+      // mvprintw(LINES / 2, 100, "linesum: %d, currentline: %d, cursorlinenum: %d, log10 linesum: %d, buffer size: %d, bottomlinenum: %d, toplinenum: %d", linesum, currentline.linenum, cursorlinenum, static_cast<int>(log10(linesum)), static_cast<int>(buffer.size()), bottomlinenum, toplinenum);
+      // mvprintw(LINES / 2 + 1, 100, "cur_y: %d, cur_x: %d", cur_y, cur_x);
+      // mvprintw(LINES / 2 + 2, 100, "difference: %d", difference);
+      // mvprintw(LINES / 2 + 3, 100, "thing: %d, thing2: %d", linesum - toplinenum, linesum - 1);
+      // mvprintw(5, 70, "toplinenum: %d", toplinenum);
+      // mvprintw(6, 70, "LINES: %d", LINES);
+      // mvprintw(7, 70, "linesum: %d", linesum);
+      // mvprintw(8, 70, "bottomlinenum: %d", bottomlinenum);
+      // mvprintw(9, 70, "testing: %d", testing);
 
       move(cur_y, cur_x);
       refresh();
@@ -669,13 +653,15 @@ namespace Functions {
         case '\n': {
           saved = false;
           insert(buffer, textcurpos, '\n');
-          if (atbottomline && toplinenum > 1) {
+
+          if (atbottomline) {
             ++cursorlinenum;
             ++toplinenum;
             break;
-          }
-          ++cursorlinenum;
-          cur_x = linestart;
+          } else
+            ++cursorlinenum;
+          cur_x     = linestart;
+          cur_x_mem = cur_x;
 
           ++cur_y;
 
@@ -747,6 +733,8 @@ namespace Functions {
             --toplinenum;
             ++cur_y;
           }
+
+          cur_x_mem = cur_x;
 
           break;
         }
