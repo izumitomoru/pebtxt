@@ -15,7 +15,9 @@
 #define ctrl(x) ((x) & 0x1f)
 #define esc 27
 
-namespace Functions {
+namespace Functions
+{
+
   using namespace std;
 
   struct lineInfo {
@@ -57,5 +59,6 @@ namespace Functions {
   void openExistingFile(string);
   void mainLoop(const string& path);
   string getLine(const string path, int lineNum);
+
 } // namespace Functions
 #endif

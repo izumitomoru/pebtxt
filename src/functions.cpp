@@ -2,21 +2,22 @@
 
 // TODO:
 // REFACTOR CODEBASE!!!
-// consolidate stuff into reusable functions to reduce redundancy (this will look something like moving the main loop to main() instead of using mianLoop)
+// consolidate stuff into reusable functions to reduce redundancy (this will
+// look something like moving the main loop to main() instead of using mianLoop)
 // add mouse scrolling (maybe not, this looks awful on ncurses)
 // fix extra newline sometimes saving at the end of the file
-// possibly implement scrolling past final line, not difficult i imagine but likely needlessly time consuming
-// add more command mode features
-// add auto indent and auto scope close
-// add ask for filename when saved if no filename previously provided
+// possibly implement scrolling past final line, not difficult i imagine but
+// likely needlessly time consuming add more command mode features add auto
+// indent and auto scope close add ask for filename when saved if no filename
+// previously provided
 
 // TODO: important!!!
-// use buffers instead of vectors, or make multiple vectors to handle large files; right now loading large files loads into a single vector and is super slow
-// add undo and redo
-// add rebinding keys
-// add text wrapping or side scrolling
+// use buffers instead of vectors, or make multiple vectors to handle large
+// files; right now loading large files loads into a single vector and is super
+// slow add undo and redo add rebinding keys add text wrapping or side scrolling
 
-namespace Functions {
+namespace Functions
+{
 
   // read file and write to buffer
   vector<char> createFileBuffer(const string& path) {
@@ -24,7 +25,7 @@ namespace Functions {
     vector<char> buffer{};
     ifstream sfile(path);
 
-    // if file doesn't exist, create a blank buffer with a single newline
+    // if file doesn't exist, create blank buffer with one \n
     if (sfile.fail()) {
       buffer.push_back('\n');
       return buffer;
@@ -61,7 +62,8 @@ namespace Functions {
         // add to string if line is proper, when next line found, stop
         if (buffer[i] != '\n' && currentlinenum == lineNum) {
           linestr += buffer[i];
-        } else if (buffer[i] == '\n') { // if nl, increment line number
+        }
+        else if (buffer[i] == '\n') { // if nl, increment line number
           ++currentlinenum;
         }
 
@@ -80,26 +82,13 @@ namespace Functions {
       int lineendtrue = linestart + lengthtrue;
 
       lineInfo line{
-        lineNum,
-        offset,
-        length,
-        lengthtrue,
-        linestart,
-        lineend,
-        lineendtrue,
-        linestr,
+        lineNum, offset, length, lengthtrue, linestart, lineend, lineendtrue, linestr,
       };
       return line;
-    } else {
+    }
+    else {
       lineInfo line{
-        1,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        "",
+        1, 0, 0, 0, 0, 0, 0, "",
       };
       return line;
     }
@@ -116,7 +105,8 @@ namespace Functions {
     // catch going past last line
     else if (bufinfo.bottomline + amount >= bufinfo.linesum) {
       bufinfo.topline += bufinfo.linesum - bufinfo.bottomline;
-    } else {
+    }
+    else {
       bufinfo.topline += amount;
     }
   }
@@ -265,18 +255,7 @@ namespace Functions {
     bool saved{ true };
 
     const bufferInfo bufinfo{
-      buffer,
-      toplinenum,
-      bottomlinenum,
-      linesum,
-      currentline,
-      linestart,
-      cursorlinenum,
-      cur_y,
-      cur_x,
-      LINES,
-      COLS,
-      cmdmode,
+      buffer, toplinenum, bottomlinenum, linesum, currentline, linestart, cursorlinenum, cur_y, cur_x, LINES, COLS, cmdmode,
     };
 
     // main loop
@@ -303,7 +282,8 @@ namespace Functions {
 
       linenum = toplinenum;
 
-      // i failed to make a single line that handles both cases, i just don't have the tools for it
+      // i failed to make a single line that handles both cases, i just don't have
+      // the tools for it
       if (toplinenum == 1 && linesum <= LINES)
         bottomlinenum = linesum;
       else
@@ -320,7 +300,8 @@ namespace Functions {
           mvprintw(buf_y, linestart + buf_x, "%c", buffer[i]);
 
           ++buf_x;
-        } else if (buffer[i] == '\n') {
+        }
+        else if (buffer[i] == '\n') {
           // spaces
           mvprintw(buf_y, -static_cast<int>(log10(linenum)) + static_cast<int>(log10(linesum)), "%d", linenum);
 
@@ -349,7 +330,8 @@ namespace Functions {
       if (cmdmode) {
         if (cur_x > check_line.lineend)
           cur_x = check_line.lineend;
-      } else {
+      }
+      else {
         if (cur_x > check_line.lineendtrue)
           cur_x = check_line.lineendtrue;
       }
@@ -377,15 +359,17 @@ namespace Functions {
       difference = cursorlinenum + (midpoint - bottomlinenum);
 
       //// PRINT INFO PRINT ////
-      // mvprintw(LINES / 2, 100, "linesum: %d, currentline: %d, cursorlinenum: %d, log10 linesum: %d, buffer size: %d, bottomlinenum: %d, toplinenum: %d", linesum, currentline.linenum, cursorlinenum, static_cast<int>(log10(linesum)), static_cast<int>(buffer.size()), bottomlinenum, toplinenum);
-      // mvprintw(LINES / 2 + 1, 100, "cur_y: %d, cur_x: %d", cur_y, cur_x);
-      // mvprintw(LINES / 2 + 2, 100, "difference: %d", difference);
-      // mvprintw(LINES / 2 + 3, 100, "thing: %d, thing2: %d", linesum - toplinenum, linesum - 1);
-      // mvprintw(5, 70, "toplinenum: %d", toplinenum);
-      // mvprintw(6, 70, "LINES: %d", LINES);
-      // mvprintw(7, 70, "linesum: %d", linesum);
-      // mvprintw(8, 70, "bottomlinenum: %d", bottomlinenum);
-      // mvprintw(9, 70, "testing: %d", testing);
+      // mvprintw(LINES / 2, 100, "linesum: %d, currentline: %d, cursorlinenum:
+      // %d, log10 linesum: %d, buffer size: %d, bottomlinenum: %d, toplinenum:
+      // %d", linesum, currentline.linenum, cursorlinenum,
+      // static_cast<int>(log10(linesum)), static_cast<int>(buffer.size()),
+      // bottomlinenum, toplinenum); mvprintw(LINES / 2 + 1, 100, "cur_y: %d,
+      // cur_x: %d", cur_y, cur_x); mvprintw(LINES / 2 + 2, 100, "difference: %d",
+      // difference); mvprintw(LINES / 2 + 3, 100, "thing: %d, thing2: %d",
+      // linesum - toplinenum, linesum - 1); mvprintw(5, 70, "toplinenum: %d",
+      // toplinenum); mvprintw(6, 70, "LINES: %d", LINES); mvprintw(7, 70,
+      // "linesum: %d", linesum); mvprintw(8, 70, "bottomlinenum: %d",
+      // bottomlinenum); mvprintw(9, 70, "testing: %d", testing);
 
       move(cur_y, cur_x);
       refresh();
@@ -403,7 +387,8 @@ namespace Functions {
             // clean up
             endwin();
             running = false;
-          } else {
+          }
+          else {
             clear();
             printw("Quit without saving? y/n ");
             switch (getch()) {
@@ -610,7 +595,8 @@ namespace Functions {
             ++cursorlinenum;
             ++toplinenum;
             break;
-          } else
+          }
+          else
             ++cursorlinenum;
           cur_x     = linestart;
           cur_x_mem = cur_x;
@@ -746,4 +732,5 @@ namespace Functions {
     }
     sfile.close();
   }
+
 } // namespace Functions
