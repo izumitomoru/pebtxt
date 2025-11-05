@@ -1,8 +1,8 @@
 #include "functions.h"
 
 // TODO:
-/// REFORM CODEBASE!!!
-// consolidate stuff into reusable functions to reduce redundancy
+// REFORM CODEBASE!!!
+// consolidate stuff into reusable functions to reduce redundancy (this will look something like moving the main loop to main() instead of using mianLoop)
 // add mouse scrolling (maybe not, this looks awful on ncurses)
 // fix extra newline sometimes saving at the end of the file
 // possibly implement scrolling past final line, not difficult i imagine but likely needlessly time consuming
@@ -18,37 +18,33 @@
 
 namespace Functions {
 
-  const string defaultpath{ "./" };
-
-  // making very inefficient copies at the moment, but it's workable
-  fileInfo getFileInfo(string path) {
-    string cachepath{};
-    if (path[0] != '/' && path[0] != '~' && path[0] != '.') {
-      path = defaultpath + path;
-    } else if (path[0] == '/' || path[0] == '~' || path[0] == '.') {
-    }
-
-    // get total number of lines, allowing for proper padding
-    string line;
+  // read file and write to buffer
+  vector<char> createFileBuffer(const string& path) {
     ifstream sfile(path);
-    int lineSum{};
-    int charSum{};
-    while (getline(sfile, line)) {
-      lineSum++;
-      charSum += line.length();
+
+    vector<char> buffer{};
+    string line{};
+
+    // write to buffer
+    while (sfile.is_open()) {
+      // extract lines
+      while (getline(sfile, line)) {
+        for (int i{}; i < line.size(); ++i) {
+          buffer.push_back(line[i]);
+        }
+        buffer.push_back('\n');
+      }
+      sfile.close();
     }
-    sfile.close();
 
-    fileInfo info{
-      path,
-      path,
-      cachepath,
-      lineSum,
-      log10(lineSum),
-      charSum,
-    };
+    return buffer;
+  }
 
-    return info;
+  void saveFile(const vector<char>& buffer, const string& path) {
+    fstream outputfile(path, fstream::in | fstream::out | fstream::trunc);
+    for (int i{}; i < buffer.size(); ++i) {
+      outputfile << buffer[i];
+    }
   }
 
   lineInfo getLineInfo(vector<char>& buffer, const int lineNum, const int linestart) {
@@ -105,54 +101,7 @@ namespace Functions {
     }
   }
 
-  void insert(vector<char>& buffer, const int pos, const char ch) {
-    buffer.insert(buffer.begin() + pos, ch);
-  }
-
-  void remove(vector<char>& buffer, int pos) {
-    buffer.erase(buffer.begin() + pos);
-  }
-
-  vector<char> createFileBuffer(fileInfo file) {
-    ifstream sfile(file.path);
-
-    vector<char> buffer{};
-
-    if (file.charSum > 0) {
-      while (sfile.is_open()) {
-        // line to read
-        string line{};
-        // track line number manually
-        [[maybe_unused]] int linenum{};
-
-        // add file lines to buffer
-        while (getline(sfile, line)) {
-          for (int i{}; i < line.size(); ++i) {
-            buffer.push_back(line[i]);
-          }
-          buffer.push_back('\n');
-        }
-        sfile.close();
-      }
-    } else {
-      if (file.lineSum > 1) {
-        for (int i{}; i < file.lineSum; ++i) {
-          buffer.push_back('\n');
-        }
-        sfile.close();
-      } else {
-        buffer.push_back('\n');
-      }
-    }
-    return buffer;
-  }
-
-  void saveFile(const vector<char>& buffer, const string& path) {
-    fstream outputfile(path, fstream::in | fstream::out | fstream::trunc);
-    for (int i{}; i < buffer.size(); ++i) {
-      outputfile << buffer[i];
-    }
-  }
+  //// scrolling ////
 
   // screen
   void scrollscr(const int& amount, const bufferInfo& bufinfo) {
@@ -208,6 +157,16 @@ namespace Functions {
     bufinfo.cur_y += amount;
   }
 
+  //// text manipulation ////
+
+  void insert(vector<char>& buffer, const int& pos, const char ch) {
+    buffer.insert(buffer.begin() + pos, ch);
+  }
+
+  void remove(vector<char>& buffer, const int& pos) {
+    buffer.erase(buffer.begin() + pos);
+  }
+
   array<char, 3> open{ '\(', '\[', '\{' };
   array<char, 3> close{ ')', ']', '}' };
 
@@ -227,21 +186,9 @@ namespace Functions {
     //}
   }
 
-  string getPath() {
-    cout << "Enter path: ";
-    string path{};
-    cin >> path;
-
-    return path;
-  }
-
-  void mainLoop(string path) {
-    // get file info
-    fileInfo file(getFileInfo(path));
-    // fileInfo file(getFileInfo("burger.txt"));
-
+  void mainLoop(const string& path) {
     // create file buffer
-    vector<char> buffer{ createFileBuffer(file) };
+    vector<char> buffer{ createFileBuffer(path) };
 
     // create screen fitting the terminal
     initscr();
@@ -250,10 +197,11 @@ namespace Functions {
       init_color(8, 0, 90, 255); // first parameter is the ID
     }
 
+    // give all input control to the program
     raw();
     set_escdelay(0);
 
-    // disable echoing keyboard input directly
+    // disable automatically echoing keyboard input
     noecho();
     // enable keypad and function keys
     keypad(stdscr, TRUE);
@@ -473,7 +421,7 @@ namespace Functions {
         case ctrl('s'): {
           // save
           saved = true;
-          saveFile(buffer, file.path);
+          saveFile(buffer, path);
 
           break;
         }
@@ -654,7 +602,7 @@ namespace Functions {
           saved = false;
           insert(buffer, textcurpos, '\n');
 
-          if (atbottomline) {
+          if (atbottomline && !lastlinevisible) {
             ++cursorlinenum;
             ++toplinenum;
             break;
@@ -770,6 +718,19 @@ namespace Functions {
         }
         }
       }
+    }
+  }
+
+  void testinputs() {
+    initscr();
+    raw();
+    while (true) {
+      int ch = getch();
+      mvprintw(1, 0, "KEY NAME : %s - 0x%02x\n", keyname(ch), ch);
+      if (ch == 'q') {
+        return;
+      }
+      refresh();
     }
   }
 

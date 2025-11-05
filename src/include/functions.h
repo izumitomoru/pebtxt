@@ -1,9 +1,6 @@
 #ifndef FUNCTIONS_H
 #define FUNCTIONS_H
 
-// #include "cpp-terminal/terminal.hpp" // another option
-// okay so i was gonna use ftxui but frankly i have no idea how to make it work so FUCK IT!!!! c++ ncurses
-
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -24,7 +21,6 @@ namespace Functions {
   struct fileInfo {
     string path{};
     string filename{};
-    string cachepath;
     int lineSum{};
     double lineLog10{};
     int charSum{};
@@ -56,21 +52,19 @@ namespace Functions {
     bool& cmdmode;
   };
 
-  fileInfo getFileInfo(const string);
+  fileInfo getFileInfo(const string&);
   lineInfo getLineInfo(vector<char>&, int, int);
 
-  vector<char> createFileBuffer(fileInfo);
+  vector<char> createFileBuffer(const string& path);
   void printBuffer(vector<char>& buffer);
-  void insert(vector<char>& buffer, int pos, char ch);
-  void remove(vector<char>& buffer, int pos);
-
-  string getPath();
+  void insert(vector<char>& buffer, const int& pos, const char ch);
+  void remove(vector<char>& buffer, const int& pos);
 
   void readFile(const string);
   void readftxui(const string);
   void writeDummyLines(string, int);
   void openExistingFile(string);
-  void mainLoop(string path);
+  void mainLoop(const string& path);
   string getLine(const string path, int lineNum);
 } // namespace Functions
 #endif

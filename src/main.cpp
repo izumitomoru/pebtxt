@@ -1,29 +1,33 @@
 #include "functions.h"
 
-void testinputs() {
-  initscr();
-  raw();
-  while (true) {
-    int ch = getch();
-    mvprintw(1, 0, "KEY NAME : %s - 0x%02x\n", keyname(ch), ch);
-    if (ch == 'q') {
-      return;
-    }
-    refresh();
-  }
-}
+std::string parse_args(const int&, char* argv[]);
 
 int main(int argc, char* argv[]) {
   using namespace Functions;
   // getinput();
   // writeDummyLines("./files/burger.txt", 125);
-  string path{};
-  if (argc == 1) {
-    path = getPath();
-  } else {
-    path = argv[1];
-  }
+  string path{ parse_args(argc, argv) };
+
   mainLoop(path);
   // testinputs();
   return 0;
+}
+
+// command line argument parser
+std::string parse_args(const int& argc, char* argv[]) {
+  std::string path{};
+
+  // if no extra args, get path post run
+  if (argc == 1) {
+    std::cout << "Enter path: ";
+    std::cin >> path;
+  } else {
+    path = argv[1];
+  }
+
+  // trim path (probably should add a check for quotations but whatever)
+  if (path[0] != '/' && path[0] != '~' && path[0] != '.')
+    path = "./" + path; // default to current directory
+
+  return path;
 }
