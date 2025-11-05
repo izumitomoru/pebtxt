@@ -20,10 +20,17 @@ namespace Functions {
 
   // read file and write to buffer
   vector<char> createFileBuffer(const string& path) {
-    ifstream sfile(path);
-
     vector<char> buffer{};
     string line{};
+    int charSum{};
+    ifstream sfile(path);
+
+    // if file doesn't exist, create a blank buffer with a single newline
+    if (sfile.fail()) {
+      buffer.push_back('\n');
+      sfile.close();
+      return buffer;
+    }
 
     // write to buffer
     while (sfile.is_open()) {
@@ -31,6 +38,7 @@ namespace Functions {
       while (getline(sfile, line)) {
         for (int i{}; i < line.size(); ++i) {
           buffer.push_back(line[i]);
+          charSum++;
         }
         buffer.push_back('\n');
       }

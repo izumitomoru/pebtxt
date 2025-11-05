@@ -18,14 +18,6 @@
 namespace Functions {
   using namespace std;
 
-  struct fileInfo {
-    string path{};
-    string filename{};
-    int lineSum{};
-    double lineLog10{};
-    int charSum{};
-  };
-
   struct lineInfo {
     int linenum{};
     int offset{};
@@ -52,7 +44,6 @@ namespace Functions {
     bool& cmdmode;
   };
 
-  fileInfo getFileInfo(const string&);
   lineInfo getLineInfo(vector<char>&, int, int);
 
   vector<char> createFileBuffer(const string& path);
