@@ -1,7 +1,7 @@
 #include "functions.h"
 
 // TODO:
-// REFORM CODEBASE!!!
+// REFACTOR CODEBASE!!!
 // consolidate stuff into reusable functions to reduce redundancy (this will look something like moving the main loop to main() instead of using mianLoop)
 // add mouse scrolling (maybe not, this looks awful on ncurses)
 // fix extra newline sometimes saving at the end of the file
@@ -20,25 +20,21 @@ namespace Functions {
 
   // read file and write to buffer
   vector<char> createFileBuffer(const string& path) {
+    // create buffer and open file
     vector<char> buffer{};
-    string line{};
-    int charSum{};
     ifstream sfile(path);
 
     // if file doesn't exist, create a blank buffer with a single newline
     if (sfile.fail()) {
       buffer.push_back('\n');
-      sfile.close();
       return buffer;
     }
-
-    // write to buffer
-    while (sfile.is_open()) {
-      // extract lines
+    // if file exists, read contents and write to buffer
+    else {
+      string line{};
       while (getline(sfile, line)) {
         for (int i{}; i < line.size(); ++i) {
           buffer.push_back(line[i]);
-          charSum++;
         }
         buffer.push_back('\n');
       }
