@@ -17,6 +17,8 @@
 
 // TODO: priority
 // rework initial setup to allow for better manipulation
+// deprecate usercursorcorrect() by eliminating errors instead of using bandaids
+// add more comments
 
 namespace Functions
 {
@@ -146,6 +148,7 @@ private:
 
     // lines
     lineInfo toplineinfo{};
+    lineInfo check_line{};
 
     int topline{ 1 };
     int bottomline{};
@@ -262,15 +265,16 @@ public:
       /// reset loop variables ///
 
       // with this system, if the buffer has no newlines, everything fails to print, so i made it that vectors always have at least one newline
-      // increment linesum every newline
       linesum = 0;
       for (int i{}; i < buffer.size(); ++i) {
+        // increment linesum every newline
         if (buffer[i] == '\n' || buffer.size() == 1) {
           ++linesum;
         }
       }
 
-      linestart = static_cast<int>(log10(linesum)) + 2; // make sure lines always start after line number
+      // global line x offset ensuring no collision with line number
+      linestart = static_cast<int>(log10(linesum)) + 2;
 
       // this prevents some funky stuff from happening that SHOULD be getting caught by scroll functions and such, this is a bandaid
       if (topline == 1 && linesum <= LINES)
@@ -285,7 +289,7 @@ public:
       // keep track of the topmost visible line, and print from it
       lineInfo toplineinfo = getLineInfo(buffer, topline, linestart);
 
-      // make sure line number is correct
+      // make sure you start from topline
       printlinenum = topline;
 
       /// print start ///
@@ -300,9 +304,10 @@ public:
         }
         // if at line end, print line number, padding, then increment line number
         else if (buffer[i] == '\n') {
-          // idk what this math is doing and i'm in no state to even try understanding
           // right to left line number alignment
           linenum_padding = -static_cast<int>(log10(printlinenum)) + static_cast<int>(log10(linesum));
+
+          // print line number
           mvprintw(printcur_y, linenum_padding, "%d", printlinenum);
 
           printcur_x = linestart; // reset print cursor position
