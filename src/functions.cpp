@@ -140,6 +140,7 @@ namespace Functions
     //}
   }
 
+  // just so we're clear, i know this whole thing is terrible. i just wanna experiment with classes and stuff so i literally converted my whole program into a class
   class Buffer {
 public:
     //// constructor ////
@@ -149,24 +150,30 @@ public:
           scrwidth{ scrwidth },
           cmdmode{ cmdmode },
           scrolldist{ scrolldist },
-          running{ running } {};
+          running{ running } {
+      buffer = createFileBuffer(path); // literally forgot to make the buffer wtf
+    };
 
     void init() {
-      move(0, 0);
-      getyx(stdscr, cur_y, cur_x);
+      // move(0, 0);
+      // getyx(stdscr, cur_y, cur_x);
       buffer = createFileBuffer(path); // literally forgot to make the buffer wtf
     }
 
     //// scrolling ////
+    // the way i have it set up is that everything is printed starting from the topmost visible line, just be aware of that
     void scrollscr(const int& amount) {
-      // catch going past first line
+      // catch going up past line 1
+      // if calculated top line is less than 1, set to 1
       if (topline + amount <= 1) {
         topline = 1;
       }
-      // catch going past last line
-      else if (bottomline + amount >= linesum) {
+      // catch going down past final line
+      // if calculated bottom line is greater than linesum, set bottom line to linesum
+      else if (bottomline + amount > linesum) {
         topline += linesum - bottomline;
       }
+      // otherwise, continue with calculated amount
       else {
         topline += amount;
       }
@@ -175,18 +182,22 @@ public:
     void scrollcur(const int& amount) {
       // most of this code is pretty messy
 
-      // catch going past first line
+      // catch going up past first line
+      // if calculated line number is less than 1, set cursor at line 1
       if (cursorlinenum + amount <= 1) {
         scrollscr(amount);
         cursorlinenum = 1;
         cur_y         = 0;
         return;
       }
-      // catch going past last line
+      // catch going down past last line
+      // if calculated line number is greater than final line, set cursor at final line
       else if (cursorlinenum + amount > linesum) {
         cursorlinenum = linesum;
+        // if bottom line is final line and doesn't go past screen height max, set cursor at bottom line
         if (bottomline == linesum && bottomline < scrheight)
           cur_y = bottomline - 1;
+        // otherwise, set cursor at screen height max
         else
           cur_y = scrheight - 1;
         scrollscr(amount);
@@ -194,7 +205,7 @@ public:
       }
 
       // going past top line
-      if (cursorlinenum + amount < topline) {
+      else if (cursorlinenum + amount < topline) {
         scrollscr((cursorlinenum + amount) - topline);
         cursorlinenum += amount;
         cur_y = 0;
@@ -722,41 +733,35 @@ private:
 
   void mainLoop(const string& path) {
     // create file buffer
-    vector<char> buffer{ createFileBuffer(path) };
+    // vector<char> buffer{ createFileBuffer(path) };
 
-    // create screen fitting the terminal
-    initscr();
+    initscr();            // create screen fitting the terminal
+    raw();                // give all input control to the program
+    set_escdelay(0);      // forgot what this is used for but it's important i swear
+    noecho();             // disable automatically echoing keyboard input
+    keypad(stdscr, TRUE); // enable keypad and function keys
+
+    // color stuff (bullshit awful evil terrible system)
     if (has_colors()) {
       start_color();
       init_color(8, 0, 90, 255); // first parameter is the ID
     }
 
-    // give all input control to the program
-    raw();
-    set_escdelay(0);
-
-    // disable automatically echoing keyboard input
-    noecho();
-    // enable keypad and function keys
-    keypad(stdscr, TRUE);
-
     /// loop variables
 
-    int  scrheight{};
-    int  scrwidth{};
+    int  scrheight{ LINES };
+    int  scrwidth{ COLS };
     bool cmdmode{ true };
+
+    //// config ////
 
     // scrolling
     int scrolldist{ 7 };
 
     bool running{ true };
 
-    // vim-like command mode so i can stop fucking using arrow keys
-
-    lineInfo check_line{};
-    lineInfo currentline{};
-
-    Buffer testbuffer{
+    // create buffer object
+    Buffer buffer{
       path,
       scrheight,
       scrwidth,
@@ -765,7 +770,8 @@ private:
       running,
     };
 
-    testbuffer.init();
+    // initialize buffer variables (create vector)
+    // buffer.init();
 
     //// loop start ////
     while (running) {
@@ -784,21 +790,21 @@ private:
       clear();
 
       // we'll use a reset() function here to restart the rendering process etc.
-      testbuffer.reset();
+      buffer.reset();
 
       // print buffer
-      testbuffer.print();
+      buffer.print();
 
       // correct cursor position
-      testbuffer.usercursorcorrect();
+      buffer.usercursorcorrect();
 
       // debug print
-      testbuffer.debugprint();
+      buffer.debugprint();
 
       refresh();
 
       //// input
-      testbuffer.input();
+      buffer.input();
       // */
     }
   }
