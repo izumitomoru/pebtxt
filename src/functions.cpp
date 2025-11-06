@@ -1,20 +1,23 @@
 #include "functions.h"
+#include <ncurses.h>
 
 // TODO:
 // REFACTOR CODEBASE!!!
-// consolidate stuff into reusable functions to reduce redundancy (this will
-// look something like moving the main loop to main() instead of using mianLoop)
+// consolidate stuff into reusable functions to reduce redundancy (this will look something like moving the main loop to main() instead of using mianLoop)
 // add mouse scrolling (maybe not, this looks awful on ncurses)
 // fix extra newline sometimes saving at the end of the file
-// possibly implement scrolling past final line, not difficult i imagine but
-// likely needlessly time consuming add more command mode features add auto
-// indent and auto scope close add ask for filename when saved if no filename
-// previously provided
+// possibly implement scrolling past final line, not difficult i imagine but likely needlessly time consuming
+// add more command mode features
+// add auto indent and auto scope close
+// add ask for filename when saved if no filename previously provided
 
 // TODO: important!!!
-// use buffers instead of vectors, or make multiple vectors to handle large
-// files; right now loading large files loads into a single vector and is super
-// slow add undo and redo add rebinding keys add text wrapping or side scrolling
+// use buffers instead of vectors, or make multiple vectors to handle large files; right now loading large files loads into a single vector and is super slow
+// add undo and redo
+// add rebinding keys add text wrapping or side scrolling
+
+// TODO: priority
+// rework initial setup to allow for better manipulation
 
 namespace Functions
 {
@@ -23,7 +26,7 @@ namespace Functions
   vector<char> createFileBuffer(const string& path) {
     // create buffer and open file
     vector<char> buffer{};
-    ifstream sfile(path);
+    ifstream     sfile(path);
 
     // if file doesn't exist, create blank buffer with one \n
     if (sfile.fail()) {
@@ -54,8 +57,8 @@ namespace Functions
 
   lineInfo getLineInfo(vector<char>& buffer, const int lineNum, const int linestart) {
     string linestr{};
-    int currentlinenum{ 1 };
-    int offset{};
+    int    currentlinenum{ 1 };
+    int    offset{};
 
     if (buffer.size() > 1) {
       for (int i{}; currentlinenum <= lineNum; ++i) {
@@ -82,73 +85,30 @@ namespace Functions
       int lineendtrue = linestart + lengthtrue;
 
       lineInfo line{
-        lineNum, offset, length, lengthtrue, linestart, lineend, lineendtrue, linestr,
+        lineNum,
+        offset,
+        length,
+        lengthtrue,
+        linestart,
+        lineend,
+        lineendtrue,
+        linestr,
       };
       return line;
     }
     else {
       lineInfo line{
-        1, 0, 0, 0, 0, 0, 0, "",
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        "",
       };
       return line;
     }
-  }
-
-  //// scrolling ////
-
-  // screen
-  void scrollscr(const int& amount, const bufferInfo& bufinfo) {
-    // catch going past first line
-    if (bufinfo.topline + amount <= 1) {
-      bufinfo.topline = 1;
-    }
-    // catch going past last line
-    else if (bufinfo.bottomline + amount >= bufinfo.linesum) {
-      bufinfo.topline += bufinfo.linesum - bufinfo.bottomline;
-    }
-    else {
-      bufinfo.topline += amount;
-    }
-  }
-
-  // cursor
-  void scrollcur(const int& amount, const bufferInfo& bufinfo) {
-    // most of this code is pretty messy
-
-    // catch going past first line
-    if (bufinfo.cursorlinenum + amount <= 1) {
-      scrollscr(amount, bufinfo);
-      bufinfo.cursorlinenum = 1;
-      bufinfo.cur_y         = 0;
-      return;
-    }
-    // catch going past last line
-    else if (bufinfo.cursorlinenum + amount > bufinfo.linesum) {
-      bufinfo.cursorlinenum = bufinfo.linesum;
-      if (bufinfo.bottomline == bufinfo.linesum && bufinfo.bottomline < bufinfo.scrheight)
-        bufinfo.cur_y = bufinfo.bottomline - 1;
-      else
-        bufinfo.cur_y = bufinfo.scrheight - 1;
-      scrollscr(amount, bufinfo);
-      return;
-    }
-
-    // going past top line
-    if (bufinfo.cursorlinenum + amount < bufinfo.topline) {
-      scrollscr((bufinfo.cursorlinenum + amount) - bufinfo.topline, bufinfo);
-      bufinfo.cursorlinenum += amount;
-      bufinfo.cur_y = 0;
-      return;
-    }
-    // going past bottom line
-    else if (bufinfo.cursorlinenum + amount > bufinfo.bottomline) {
-      scrollscr((bufinfo.cursorlinenum + amount) - bufinfo.bottomline, bufinfo);
-      bufinfo.cur_y = bufinfo.scrheight - 1;
-      bufinfo.cursorlinenum += amount;
-      return;
-    }
-    bufinfo.cursorlinenum += amount;
-    bufinfo.cur_y += amount;
   }
 
   //// text manipulation ////
@@ -180,91 +140,85 @@ namespace Functions
     //}
   }
 
-  void mainLoop(const string& path) {
-    // create file buffer
-    vector<char> buffer{ createFileBuffer(path) };
+  class Buffer {
+public:
+    //// constructor ////
+    Buffer(const string& path, int& scrheight, int& scrwidth, bool& cmdmode, int& scrolldist, bool& running)
+        : path{ path },
+          scrheight{ scrheight },
+          scrwidth{ scrwidth },
+          cmdmode{ cmdmode },
+          scrolldist{ scrolldist },
+          running{ running } {};
 
-    // create screen fitting the terminal
-    initscr();
-    if (has_colors()) {
-      start_color();
-      init_color(8, 0, 90, 255); // first parameter is the ID
+    void init() {
+      move(0, 0);
+      getyx(stdscr, cur_y, cur_x);
+      buffer = createFileBuffer(path); // literally forgot to make the buffer wtf
     }
 
-    // give all input control to the program
-    raw();
-    set_escdelay(0);
+    //// scrolling ////
+    void scrollscr(const int& amount) {
+      // catch going past first line
+      if (topline + amount <= 1) {
+        topline = 1;
+      }
+      // catch going past last line
+      else if (bottomline + amount >= linesum) {
+        topline += linesum - bottomline;
+      }
+      else {
+        topline += amount;
+      }
+    }
 
-    // disable automatically echoing keyboard input
-    noecho();
-    // enable keypad and function keys
-    keypad(stdscr, TRUE);
+    void scrollcur(const int& amount) {
+      // most of this code is pretty messy
 
-    /// loop variables
+      // catch going past first line
+      if (cursorlinenum + amount <= 1) {
+        scrollscr(amount);
+        cursorlinenum = 1;
+        cur_y         = 0;
+        return;
+      }
+      // catch going past last line
+      else if (cursorlinenum + amount > linesum) {
+        cursorlinenum = linesum;
+        if (bottomline == linesum && bottomline < scrheight)
+          cur_y = bottomline - 1;
+        else
+          cur_y = scrheight - 1;
+        scrollscr(amount);
+        return;
+      }
 
-    // spaces
-    int maxspacenum{};
-    string spacestr{};
+      // going past top line
+      if (cursorlinenum + amount < topline) {
+        scrollscr((cursorlinenum + amount) - topline);
+        cursorlinenum += amount;
+        cur_y = 0;
+        return;
+      }
+      // going past bottom line
+      else if (cursorlinenum + amount > bottomline) {
+        scrollscr((cursorlinenum + amount) - bottomline);
+        cur_y = scrheight - 1;
+        cursorlinenum += amount;
+        return;
+      }
+      cursorlinenum += amount;
+      cur_y += amount;
+    }
 
-    // lines
-    int linenum{ 0 };
+    //// resetting variables ////
+    void reset() {
+      scrheight = LINES;
+      scrwidth  = COLS;
+      // calculate line sum, spaces, line number
+      spacenum  = 0;
+      linestart = 0;
 
-    int linesum{ 0 };
-    int toplinenum{ 1 };
-    int bottomlinenum{};
-    int bufferlineoffset{};
-
-    int linestart{};
-    int lineend{};
-    int lineendtrue{};
-
-    int midpoint{};
-    int height{};
-    int difference{};
-
-    // cursor
-    int textcurpos{};
-
-    int cur_x{};
-    int cur_y{};
-
-    int cur_x_mem{};
-
-    int cursorlinenum{ 1 };
-
-    move(0, 0);
-    getyx(stdscr, cur_y, cur_x);
-
-    // scrolling
-    int scrolldist{ 7 };
-
-    int buf_x{};
-    int buf_y{};
-
-    // vim-like command mode so i can stop fucking using arrow keys
-    bool cmdmode{ true };
-
-    lineInfo check_line{};
-    lineInfo currentline{};
-
-    //  loop stuff
-    bool running{ true };
-    int ch{};
-
-    string forbiddenchars{ "asdf" };
-    bool saved{ true };
-
-    const bufferInfo bufinfo{
-      buffer, toplinenum, bottomlinenum, linesum, currentline, linestart, cursorlinenum, cur_y, cur_x, LINES, COLS, cmdmode,
-    };
-
-    // main loop
-    while (running) {
-      clear();
-
-      // calculate line sum, spaces, line number, then print buffer
-      maxspacenum = 0;
-      linestart   = 0;
       // line sum
       linesum = 0;
       for (int i{}; i < buffer.size(); ++i) {
@@ -272,51 +226,60 @@ namespace Functions
           ++linesum;
         }
       }
-      maxspacenum = static_cast<int>(log10(linesum));
+      spacenum = static_cast<int>(log10(linesum));
       // + 2 is for the space between line number and text
-      linestart = maxspacenum + 2;
-
-      // print buffer
+      linestart = spacenum + 2;
 
       // keep track of the topmost visible line, and print from it
+      linenum = topline;
 
-      linenum = toplinenum;
-
-      // i failed to make a single line that handles both cases, i just don't have
-      // the tools for it
-      if (toplinenum == 1 && linesum <= LINES)
-        bottomlinenum = linesum;
-      else
-        bottomlinenum = toplinenum + LINES - 1;
-
-      lineInfo line{ getLineInfo(buffer, toplinenum, linestart) };
       // reset buffer printing
       buf_y = 0;
       buf_x = 0;
+    }
+    void printtest() {
+      mvprintw(3, 4, "test");
+    }
 
+    //// printing ////
+    void print() {
+      // i failed to make a single line that handles both cases, i just don't have the tools for it
+      if (topline == 1 && linesum <= LINES)
+        bottomline = linesum;
+      else
+        bottomline = topline + LINES - 1;
+
+      // synonymous with topline i guess
+      lineInfo line{ getLineInfo(buffer, topline, linestart) };
+
+      // print starting from topline
       for (int i{ line.offset }; i < buffer.size(); ++i) {
-        // if not newline
+        // iterate through line printing each character until line end
         if (buffer[i] != '\n') {
           mvprintw(buf_y, linestart + buf_x, "%c", buffer[i]);
 
           ++buf_x;
         }
+        // if at line end, print line number, padding, then increment line number
         else if (buffer[i] == '\n') {
           // spaces
+          // idk what this math is doing and i'm in no state to even try understanding
           mvprintw(buf_y, -static_cast<int>(log10(linenum)) + static_cast<int>(log10(linesum)), "%d", linenum);
 
-          // line number
-          init_pair(1, 8, COLOR_BLACK);
-          attron(8);
-          // this gets offset when topmostline is a power of 10
-          attroff(COLOR_PAIR(8));
+          // init_pair(1, 8, COLOR_BLACK);
+          // attron(8);
+          // attroff(COLOR_PAIR(8));
 
+          // reset buffer x position
           buf_x = 0;
-          ++buf_y; // in place of a \n, it keeps things smoother i think
+          // move down one line
+          ++buf_y;
           ++linenum;
         }
       }
+    }
 
+    void usercursorcorrect() {
       // text edge cursor position checks
       lineInfo check_line = getLineInfo(buffer, cursorlinenum, linestart);
       // top border
@@ -338,44 +301,47 @@ namespace Functions
       if (cur_x < linestart)
         cur_x = linestart;
 
+      // some bullshit probably i forgot
       lineInfo currentline = getLineInfo(buffer, cursorlinenum, linestart);
       textcurpos           = currentline.offset + (cur_x - linestart);
       lineend              = currentline.lineend;
       lineendtrue          = currentline.lineendtrue;
 
+      midpoint   = (LINES) / 2;
+      difference = cursorlinenum + (midpoint - bottomline);
+
+      move(cur_y, cur_x);
+    }
+
+    void debugprint() {
+      lineInfo currentline = getLineInfo(buffer, cursorlinenum, linestart);
+      mvprintw(LINES / 2, 100, "linesum: %d, currentline: %d, cursorlinenum: %d, log10 linesum: %d, buffer size: %d, bottomlinenum: %d, topline: %d", linesum, currentline.linenum, cursorlinenum, static_cast<int>(log10(linesum)), static_cast<int>(buffer.size()), bottomline, topline);
+      mvprintw(LINES / 2 + 1, 100, "cur_y: %d, cur_x : % d ", cur_y, cur_x);
+      mvprintw(LINES / 2 + 2, 100, " difference : % d ", difference);
+      mvprintw(LINES / 2 + 3, 100, "thing: %d, thing2: %d", linesum - topline, linesum - 1);
+      mvprintw(5, 70, "topline: %d", topline);
+      mvprintw(6, 70, "LINES: %d", LINES);
+      mvprintw(7, 70, "linesum: %d", linesum);
+      mvprintw(8, 70, "bottomlinenum: %d", bottomline);
+      // mvprintw(9, 70, "testing: %d", testing);
+
+      move(cur_y, cur_x);
+    }
+
+    void input() {
+      lineInfo currentline = getLineInfo(buffer, cursorlinenum, linestart);
       // line check booleans
-      bool firstlinevisible = (toplinenum == 1);
-      bool attopline        = (cursorlinenum == toplinenum);
-      bool atbottomline     = (cursorlinenum == bottomlinenum);
+      bool firstlinevisible = (topline == 1);
+      bool attopline        = (cursorlinenum == topline);
+      bool atbottomline     = (cursorlinenum == bottomline);
       bool atfirstline      = (cursorlinenum == 1);
       bool atlastline       = (cursorlinenum == linesum);
-      bool lastlinevisible  = (bottomlinenum == linesum);
+      bool lastlinevisible  = (bottomline == linesum);
       bool atlinestart      = (cur_x == linestart);
       bool atlineend        = (cur_x >= lineend);
       bool atlineendtrue    = (cur_x >= lineendtrue);
-      bool screenfull       = (bottomlinenum >= LINES);
-
-      midpoint   = (LINES) / 2;
-      difference = cursorlinenum + (midpoint - bottomlinenum);
-
-      //// PRINT INFO PRINT ////
-      // mvprintw(LINES / 2, 100, "linesum: %d, currentline: %d, cursorlinenum:
-      // %d, log10 linesum: %d, buffer size: %d, bottomlinenum: %d, toplinenum:
-      // %d", linesum, currentline.linenum, cursorlinenum,
-      // static_cast<int>(log10(linesum)), static_cast<int>(buffer.size()),
-      // bottomlinenum, toplinenum); mvprintw(LINES / 2 + 1, 100, "cur_y: %d,
-      // cur_x: %d", cur_y, cur_x); mvprintw(LINES / 2 + 2, 100, "difference: %d",
-      // difference); mvprintw(LINES / 2 + 3, 100, "thing: %d, thing2: %d",
-      // linesum - toplinenum, linesum - 1); mvprintw(5, 70, "toplinenum: %d",
-      // toplinenum); mvprintw(6, 70, "LINES: %d", LINES); mvprintw(7, 70,
-      // "linesum: %d", linesum); mvprintw(8, 70, "bottomlinenum: %d",
-      // bottomlinenum); mvprintw(9, 70, "testing: %d", testing);
-
-      move(cur_y, cur_x);
-      refresh();
-
-      //// input
-      ch = getch();
+      bool screenfull       = (bottomline >= LINES);
+      ch                    = getch();
 
       /// command mode
       if (cmdmode) {
@@ -454,7 +420,7 @@ namespace Functions
 
           if (atbottomline && screenfull) {
             ++cursorlinenum;
-            ++toplinenum;
+            ++topline;
             break;
           }
           ++cursorlinenum;
@@ -477,12 +443,12 @@ namespace Functions
           if (difference == 0 || linesum <= LINES)
             break;
 
-          scrollscr(difference, bufinfo);
+          scrollscr(difference);
 
-          if (toplinenum == 1)
+          if (topline == 1)
             cur_y = cursorlinenum - 1;
-          else if (bottomlinenum + difference >= linesum)
-            cur_y += -(linesum - bottomlinenum);
+          else if (bottomline + difference >= linesum)
+            cur_y += -(linesum - bottomline);
           else
             cur_y += -difference;
 
@@ -502,23 +468,23 @@ namespace Functions
         }
         case 'g': {
           if (getch() == 'g')
-            scrollcur(-linesum, bufinfo);
+            scrollcur(-linesum);
           else
             break;
           break;
         }
         case 'G': {
-          scrollcur(linesum, bufinfo);
+          scrollcur(linesum);
           break;
         }
 
         // fast scroll
         case ctrl('u'): {
-          scrollcur(-scrolldist, bufinfo);
+          scrollcur(-scrolldist);
           break;
         }
         case ctrl('d'): {
-          scrollcur(scrolldist, bufinfo);
+          scrollcur(scrolldist);
           break;
         }
 
@@ -531,11 +497,11 @@ namespace Functions
           break;
         }
         case 'j': {
-          scrollcur(1, bufinfo);
+          scrollcur(1);
           break;
         }
         case 'k': {
-          scrollcur(-1, bufinfo);
+          scrollcur(-1);
           break;
         }
         case 'l': {
@@ -564,11 +530,11 @@ namespace Functions
 
         // navigation (arrow keys etc.)
         case KEY_UP: {
-          scrollcur(-1, bufinfo);
+          scrollcur(-1);
           break;
         }
         case KEY_DOWN: {
-          scrollcur(1, bufinfo);
+          scrollcur(1);
           break;
         }
         case KEY_RIGHT: {
@@ -593,7 +559,7 @@ namespace Functions
 
           if (atbottomline && !lastlinevisible) {
             ++cursorlinenum;
-            ++toplinenum;
+            ++topline;
             break;
           }
           else
@@ -629,7 +595,7 @@ namespace Functions
             cur_x_mem = cur_x;
 
             if (attopline && !firstlinevisible) {
-              --toplinenum;
+              --topline;
               --cursorlinenum;
               break;
             }
@@ -643,7 +609,7 @@ namespace Functions
 
             // if you don't want the ability to scroll past final line
             if (lastlinevisible) {
-              --toplinenum;
+              --topline;
               break;
             }
 
@@ -668,7 +634,7 @@ namespace Functions
             break;
 
           if (!firstlinevisible && lastlinevisible) {
-            --toplinenum;
+            --topline;
             ++cur_y;
           }
 
@@ -708,6 +674,132 @@ namespace Functions
         }
         }
       }
+    }
+
+private:
+    vector<char> buffer{};
+    int          linenum{ 0 };
+    int          linesum{};
+
+    int buf_y{};
+    int buf_x{};
+
+    int topline{ 1 };
+    int bottomline{};
+    int linestart{};
+
+    int    spacenum{};
+    string spacestr{};
+
+    // loop stuff
+    bool& running;
+    int   ch{};
+
+    bool saved{ true };
+
+    // user cursor info
+    int cur_y{};
+    int cur_x{};
+    int cur_x_mem{};
+    int textcurpos{};
+
+    int midpoint{};
+    int height{};
+    int difference{};
+
+    int lineend{};
+    int lineendtrue{};
+    int cursorlinenum{ 1 };
+
+    const string& path;
+
+    // program info
+    int&  scrheight;
+    int&  scrwidth;
+    bool& cmdmode;
+    int&  scrolldist;
+  };
+
+  void mainLoop(const string& path) {
+    // create file buffer
+    vector<char> buffer{ createFileBuffer(path) };
+
+    // create screen fitting the terminal
+    initscr();
+    if (has_colors()) {
+      start_color();
+      init_color(8, 0, 90, 255); // first parameter is the ID
+    }
+
+    // give all input control to the program
+    raw();
+    set_escdelay(0);
+
+    // disable automatically echoing keyboard input
+    noecho();
+    // enable keypad and function keys
+    keypad(stdscr, TRUE);
+
+    /// loop variables
+
+    int  scrheight{};
+    int  scrwidth{};
+    bool cmdmode{ true };
+
+    // scrolling
+    int scrolldist{ 7 };
+
+    bool running{ true };
+
+    // vim-like command mode so i can stop fucking using arrow keys
+
+    lineInfo check_line{};
+    lineInfo currentline{};
+
+    Buffer testbuffer{
+      path,
+      scrheight,
+      scrwidth,
+      cmdmode,
+      scrolldist,
+      running,
+    };
+
+    testbuffer.init();
+
+    //// loop start ////
+    while (running) {
+      // for the sake of readability and experience i'm refactoring this whole thing to make use of classes and member functions
+      // i wanna have a flow like this:
+      // 1. clear screen
+      // 2. reset loop variables
+      // 3. print line number
+      // 4. print buffer
+      // 5. correct user cursor position according to previous input and or errors
+      // 6. handle input
+
+      // what i'm trying to do now is very funny and improper but i'm gonna continue anyways
+
+      // reset screen
+      clear();
+
+      // we'll use a reset() function here to restart the rendering process etc.
+      testbuffer.reset();
+
+      // print buffer
+      testbuffer.print();
+
+      // correct cursor position
+      testbuffer.usercursorcorrect();
+
+      // debug print
+      testbuffer.debugprint();
+
+      refresh();
+
+      //// input
+      testbuffer.input();
+      // */
     }
   }
 
