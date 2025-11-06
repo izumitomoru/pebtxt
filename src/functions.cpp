@@ -3,7 +3,6 @@
 
 // TODO:
 // REFACTOR CODEBASE!!!
-// consolidate stuff into reusable functions to reduce redundancy (this will look something like moving the main loop to main() instead of using mianLoop)
 // add mouse scrolling (maybe not, this looks awful on ncurses)
 // fix extra newline sometimes saving at the end of the file
 // possibly implement scrolling past final line, not difficult i imagine but likely needlessly time consuming
@@ -89,7 +88,6 @@ namespace Functions
         offset,
         length,
         lengthtrue,
-        linestart,
         lineend,
         lineendtrue,
         linestr,
@@ -99,7 +97,6 @@ namespace Functions
     else {
       lineInfo line{
         1,
-        0,
         0,
         0,
         0,
@@ -121,9 +118,6 @@ namespace Functions
     buffer.erase(buffer.begin() + pos);
   }
 
-  array<char, 3> open{ '\(', '\[', '\{' };
-  array<char, 3> close{ ')', ']', '}' };
-
   // autoPair for parentheses, quotes etc.
   void autoPair(vector<char>& buffer, int pos, char ch) {
     char pairch{};
@@ -142,8 +136,55 @@ namespace Functions
 
   // just so we're clear, i know this whole thing is terrible. i just wanna experiment with classes and stuff so i literally converted my whole program into a class
   class Buffer {
+private:
+    vector<char> buffer{};
+    int          printlinenum{ 0 };
+    int          linesum{};
+
+    int printcur_y{};
+    int printcur_x{};
+
+    // lines
+    lineInfo toplineinfo{};
+
+    int topline{ 1 };
+    int bottomline{};
+    int linestart{};
+
+    int    linenum_padding{};
+    string spacestr{};
+
+    // loop stuff
+    bool& running;
+    int   ch{};
+
+    bool saved{ true };
+
+    // user cursor info
+    int cur_y{};
+    int cur_x{};
+    int cur_x_mem{};
+    int textcurpos{};
+
+    int midpoint{};
+    int height{};
+    int difference{};
+
+    int lineend{};
+    int lineendtrue{};
+    int cursorlinenum{ 1 };
+
+    const string& path;
+
+    // program info
+    int&  scrheight;
+    int&  scrwidth;
+    bool& cmdmode;
+    int&  scrolldist;
+
 public:
     //// constructor ////
+    // not bothering with an init() function; i think every time you initialize this you'll want a buffer to be created
     Buffer(const string& path, int& scrheight, int& scrwidth, bool& cmdmode, int& scrolldist, bool& running)
         : path{ path },
           scrheight{ scrheight },
@@ -151,14 +192,8 @@ public:
           cmdmode{ cmdmode },
           scrolldist{ scrolldist },
           running{ running } {
-      buffer = createFileBuffer(path); // literally forgot to make the buffer wtf
+      buffer = createFileBuffer(path);
     };
-
-    void init() {
-      // move(0, 0);
-      // getyx(stdscr, cur_y, cur_x);
-      buffer = createFileBuffer(path); // literally forgot to make the buffer wtf
-    }
 
     //// scrolling ////
     // the way i have it set up is that everything is printed starting from the topmost visible line, just be aware of that
@@ -222,70 +257,57 @@ public:
       cur_y += amount;
     }
 
-    //// resetting variables ////
-    void reset() {
-      scrheight = LINES;
-      scrwidth  = COLS;
-      // calculate line sum, spaces, line number
-      spacenum  = 0;
-      linestart = 0;
+    //// printing ////
+    void print() {
+      /// reset loop variables ///
 
-      // line sum
+      // with this system, if the buffer has no newlines, everything fails to print, so i made it that vectors always have at least one newline
+      // increment linesum every newline
       linesum = 0;
       for (int i{}; i < buffer.size(); ++i) {
         if (buffer[i] == '\n' || buffer.size() == 1) {
           ++linesum;
         }
       }
-      spacenum = static_cast<int>(log10(linesum));
-      // + 2 is for the space between line number and text
-      linestart = spacenum + 2;
 
-      // keep track of the topmost visible line, and print from it
-      linenum = topline;
+      linestart = static_cast<int>(log10(linesum)) + 2; // make sure lines always start after line number
 
-      // reset buffer printing
-      buf_y = 0;
-      buf_x = 0;
-    }
-    void printtest() {
-      mvprintw(3, 4, "test");
-    }
-
-    //// printing ////
-    void print() {
-      // i failed to make a single line that handles both cases, i just don't have the tools for it
+      // this prevents some funky stuff from happening that SHOULD be getting caught by scroll functions and such, this is a bandaid
       if (topline == 1 && linesum <= LINES)
         bottomline = linesum;
       else
         bottomline = topline + LINES - 1;
 
-      // synonymous with topline i guess
-      lineInfo line{ getLineInfo(buffer, topline, linestart) };
+      // reset buffer print cursor
+      printcur_y = 0;
+      printcur_x = linestart;
 
-      // print starting from topline
-      for (int i{ line.offset }; i < buffer.size(); ++i) {
+      // keep track of the topmost visible line, and print from it
+      lineInfo toplineinfo = getLineInfo(buffer, topline, linestart);
+
+      // make sure line number is correct
+      printlinenum = topline;
+
+      /// print start ///
+
+      // print starting from topmost visible line
+      for (int i{ toplineinfo.offset }; i < buffer.size(); ++i) {
         // iterate through line printing each character until line end
         if (buffer[i] != '\n') {
-          mvprintw(buf_y, linestart + buf_x, "%c", buffer[i]);
+          mvprintw(printcur_y, printcur_x, "%c", buffer[i]);
 
-          ++buf_x;
+          ++printcur_x;
         }
         // if at line end, print line number, padding, then increment line number
         else if (buffer[i] == '\n') {
-          // spaces
           // idk what this math is doing and i'm in no state to even try understanding
-          mvprintw(buf_y, -static_cast<int>(log10(linenum)) + static_cast<int>(log10(linesum)), "%d", linenum);
+          // right to left line number alignment
+          linenum_padding = -static_cast<int>(log10(printlinenum)) + static_cast<int>(log10(linesum));
+          mvprintw(printcur_y, linenum_padding, "%d", printlinenum);
 
-          // init_pair(1, 8, COLOR_BLACK);
-          // attron(8);
-          // attroff(COLOR_PAIR(8));
-
-          // reset buffer x position
-          buf_x = 0;
-          // move down one line
-          ++buf_y;
-          ++linenum;
+          printcur_x = linestart; // reset print cursor position
+          ++printcur_y;           // move down one line
+          ++printlinenum;         // increment print line number
         }
       }
     }
@@ -686,55 +708,10 @@ public:
         }
       }
     }
-
-private:
-    vector<char> buffer{};
-    int          linenum{ 0 };
-    int          linesum{};
-
-    int buf_y{};
-    int buf_x{};
-
-    int topline{ 1 };
-    int bottomline{};
-    int linestart{};
-
-    int    spacenum{};
-    string spacestr{};
-
-    // loop stuff
-    bool& running;
-    int   ch{};
-
-    bool saved{ true };
-
-    // user cursor info
-    int cur_y{};
-    int cur_x{};
-    int cur_x_mem{};
-    int textcurpos{};
-
-    int midpoint{};
-    int height{};
-    int difference{};
-
-    int lineend{};
-    int lineendtrue{};
-    int cursorlinenum{ 1 };
-
-    const string& path;
-
-    // program info
-    int&  scrheight;
-    int&  scrwidth;
-    bool& cmdmode;
-    int&  scrolldist;
   };
 
   void mainLoop(const string& path) {
-    // create file buffer
-    // vector<char> buffer{ createFileBuffer(path) };
-
+    //// ncurses init ////
     initscr();            // create screen fitting the terminal
     raw();                // give all input control to the program
     set_escdelay(0);      // forgot what this is used for but it's important i swear
@@ -747,13 +724,13 @@ private:
       init_color(8, 0, 90, 255); // first parameter is the ID
     }
 
-    /// loop variables
+    //// main program variables ////
 
-    int  scrheight{ LINES };
-    int  scrwidth{ COLS };
+    int& scrheight{ LINES };
+    int& scrwidth{ COLS };
     bool cmdmode{ true };
 
-    //// config ////
+    /// config ///
 
     // scrolling
     int scrolldist{ 7 };
@@ -770,9 +747,6 @@ private:
       running,
     };
 
-    // initialize buffer variables (create vector)
-    // buffer.init();
-
     //// loop start ////
     while (running) {
       // for the sake of readability and experience i'm refactoring this whole thing to make use of classes and member functions
@@ -786,26 +760,12 @@ private:
 
       // what i'm trying to do now is very funny and improper but i'm gonna continue anyways
 
-      // reset screen
-      clear();
-
-      // we'll use a reset() function here to restart the rendering process etc.
-      buffer.reset();
-
-      // print buffer
-      buffer.print();
-
-      // correct cursor position
-      buffer.usercursorcorrect();
-
-      // debug print
-      buffer.debugprint();
-
-      refresh();
-
-      //// input
-      buffer.input();
-      // */
+      clear();                    // reset screen
+      buffer.print();             // print buffer
+      buffer.usercursorcorrect(); // correct cursor position
+      buffer.debugprint();        // debug print
+      refresh();                  // refresh screen
+      buffer.input();             // input
     }
   }
 
