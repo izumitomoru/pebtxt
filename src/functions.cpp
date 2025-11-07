@@ -17,8 +17,12 @@
 
 // TODO: priority
 // rework initial setup to allow for better manipulation
-// deprecate usercursorcorrect() by eliminating errors instead of using bandaids
+// improve existing functions
+// make better use of usercursorcorrect()
 // add more comments
+
+// i really have no idea which structure is better, one that catches positional errors at loop start, one that gets called by every function that changes position, or per function basis
+// i think i'll try to do as little case per case basis as possible, and make one function i call either at loop start or per function that handles all errors on its own
 
 namespace Functions
 {
@@ -219,6 +223,19 @@ public:
 
     void scrollcur(const int& amount) {
       // most of this code is pretty messy
+
+      // gonna be trying a new setup here
+      /*
+        // if going offscreen
+        if ((cursorlinenum + amount) > bottomline || (cursorlinenum + amount) < topline) {
+          scrollscr(amount);
+        }
+
+        cursorlinenum += amount;
+        cur_y += amount;
+
+        return;
+      // */
 
       // catch going up past first line
       // if calculated line number is less than 1, set cursor at line 1
